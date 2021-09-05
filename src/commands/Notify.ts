@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
-import { getData, profiles } from "..";
-import { Option, Profile } from "../Profile";
+import { getClientProfile, getData } from "..";
+import { ClientOption } from "../ClientProfile";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("notify")
@@ -17,7 +17,11 @@ module.exports = {
             await interaction.reply({ content: "Invalid server.", ephemeral: true });
             return;
         }
-        let server = getData(sn);
+        if (!interaction.guildId || !interaction.inGuild()) {
+            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
+            return;
+        }
+        let server = getData(interaction.guildId, sn);
         if (!server) {
             await interaction.reply({ content: "Unknown server.", ephemeral: true });
             return;
@@ -29,9 +33,7 @@ module.exports = {
         }
 
         let id = interaction.user.id;
-        if (!profiles.get(id))
-            profiles.set(id, new Profile(id));
-        let profile = profiles.get(id);
+        let profile = getClientProfile(id);
         let value = interaction.options.getString("value");
 
         if (!profile) {
@@ -48,14 +50,14 @@ module.exports = {
         }
 
         if (value == "reset" || value == "clear") {
-            if (profile?.options)
-                profile.options = profile?.options.filter(opt => opt.server != server?.name && opt.type != type);
+            if (profile.options)
+                profile.options = profile.options.filter(opt => opt.server != server?.name && opt.type != type);
             await interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + server.name + "." })
             profile?.save();
             return;
         }
 
-        let opt = new Option({ server: server.name, type: type, value: interaction.options.getString("value") });
+        let opt = new ClientOption({ server: server.name, type: type, value: interaction.options.getString("value") });
 
         if (type === "player" && !opt.value) {
             await interaction.reply({ content: "You must specify a player to watch", ephemeral: true });

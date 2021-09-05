@@ -37,16 +37,14 @@ export function sendMessageID(id: string, msg: any, data: ServerData) {
 export function getChannel(id: string): Channel | undefined {
     let chan = client.channels.cache.get(id);
     if (chan == null)
-        console.error("Invalid channel: " + id);
+        return undefined;
     return chan;
 }
 
 export function getTextChannel(id: string): TextChannel | undefined {
     let chan = getChannel(id);
-    if (!chan?.isText || chan?.type != "GUILD_TEXT") {
-        console.error("Invalid channel: " + id);
+    if (!chan?.isText || chan?.type != "GUILD_TEXT")
         return undefined;
-    }
 
     return chan as TextChannel;
 }

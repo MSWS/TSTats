@@ -1,7 +1,10 @@
-import { getMessenger, profiles } from ".";
+import { clientProfiles, getMessenger } from ".";
 import { ServerData } from "./ServerData";
 import { sendDM } from "./Utils";
 
+/**
+ * Responsible for querying Gamedig's API and updating the responsible messenger.
+ */
 export class Updater {
     ip: string;
     port: number | undefined;
@@ -19,6 +22,9 @@ export class Updater {
         this.data = new ServerData(data);
     }
 
+    /**
+     * Queries Gamedig and updates the ServerData
+     */
     async update() {
         try {
             await this.Gamedig.query({
@@ -45,8 +51,7 @@ export class Updater {
                 }
                 this.data.ping = state.ping;
                 this.data.players = players;
-                getMessenger(this.data.name)?.update(this.data);
-
+                getMessenger(this.data.guild)?.update(this.data);
                 let newData = getMessenger(this.data.name)?.getServerData(this.data);
                 if (newData?.joined)
                     for (let p of newData.joined)
@@ -62,15 +67,19 @@ export class Updater {
                 this.data.map = "Offline";
                 this.data.ping = -1;
                 this.data.sourceName = this.data.name + " (Offline)";
-                getMessenger(this.data.name)?.update(this.data);
+                getMessenger(this.data.guild)?.update(this.data);
             });
         } catch (error) {
             console.error(error);
         }
     }
 
+    /**
+     * Notifies players about the server's status changing.
+     * @param status 
+     */
     notifyStatus(status: boolean) {
-        for (let profile of profiles.values()) {
+        for (let profile of clientProfiles.values()) {
             for (let option of profile.options) {
                 if (option.server != this.data.name || option.type != "status")
                     continue;
@@ -79,8 +88,12 @@ export class Updater {
         }
     }
 
+    /**
+     * Notifies players about the server's map changing.
+     * @param newMap New map that was changed to
+     */
     notifyMap(newMap: string) {
-        for (let profile of profiles.values()) {
+        for (let profile of clientProfiles.values()) {
             for (let option of profile.options) {
                 if (option.server != this.data.name || option.type != "map")
                     continue;
@@ -91,8 +104,13 @@ export class Updater {
         }
     }
 
+    /**
+     * Notifies players about a player joining/leaving the server.
+     * @param player Player that joined/left
+     * @param online Whether the player is now online
+     */
     notifyPlayer(player: string, online: boolean) {
-        for (let profile of profiles.values()) {
+        for (let profile of clientProfiles.values()) {
             for (let option of profile.options) {
                 if (option.server != this.data.name || option.type != "player")
                     continue;
@@ -103,6 +121,12 @@ export class Updater {
         }
     }
 
+    /**
+     * Simple wrapper to allow for regex or normal contains queries
+     * @param query Query to test
+     * @param value Value to query
+     * @returns True if the value contains or matches the query, false otherwise
+     */
     matches(query?: string | null, value?: string): boolean {
         if (!query || !value)
             return false;
@@ -114,6 +138,11 @@ export class Updater {
         return (reg && reg.test(value)) || value.includes(query);
     }
 
+    /**
+     * Starts the repeating task to send discord messages.
+     * @param cooldown Time to wait before starting task
+     * @param rate Time between tasks
+     */
     public start(cooldown: number, rate: number) {
         if (this.cancelled)
             return;

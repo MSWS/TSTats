@@ -1,8 +1,9 @@
 import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
 import { CommandInteraction } from "discord.js";
-import { config, getData, getFirstMessenger, saveConfig } from "..";
+import { config, getData, getGuildProfile, getMessenger } from "..";
 import { ServerData } from "../ServerData";
+import { Updater } from "../Updater";
 import { getTextChannel } from "../Utils";
 
 module.exports = {
@@ -19,22 +20,32 @@ module.exports = {
     async execute(interaction: CommandInteraction) {
         let channel = interaction.options.getChannel("channel");
         if (!channel) {
-            await interaction.reply({ content: "No channel exists by that name", ephemeral: true });
+            await interaction.reply({ content: "No channel exists by that name.", ephemeral: true });
             return;
         }
         if (!getTextChannel(channel?.id)) {
-            await interaction.reply({ content: "Invalid channel, must be a text channel.", ephemeral: true });
+            await interaction.reply({ content: "Invalid channel: <#" + channel.id + "> is not a text channel.", ephemeral: true });
+            return;
+        }
+        if (!interaction.guildId || !interaction.inGuild()) {
+            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
+            return;
+        }
+        if (!interaction.guild?.channels.cache.get(channel.id)?.permissionsFor(interaction.user)?.has("MANAGE_CHANNELS")) {
+            await interaction.reply({ content: "You require the `MANAGE_CHANNELS` permission for <#" + channel.id + ">.", ephemeral: true });
             return;
         }
         let name = interaction.options.getString("name");
-        if (name && getData(name)) {
-            await interaction.reply({ content: "That server name already exists.", ephemeral: true });
-            return;
-        }
+
         if (!name) {
-            await interaction.reply({ content: "Invalid server name", ephemeral: true });
+            await interaction.reply({ content: "You must specify a server name.", ephemeral: true });
             return;
         }
+        if (getData(interaction.guildId, name, true)) {
+            await interaction.reply({ content: "A server already exists by that name.", ephemeral: true });
+            return;
+        }
+
         let ip = interaction.options.getString("ip");
         let image: any = interaction.options.getString("image");
         if (!image)
@@ -43,16 +54,22 @@ module.exports = {
             return;
         if (!ip)
             return;
+
         let data = new ServerData({
+            guild: interaction.guildId,
             name: name,
             ip: ip,
             channel: channel.id,
             image: image,
         });
-        getFirstMessenger(channel.id).add(data);
-        config["servers"].push(data);
-        saveConfig();
-        await interaction.reply({ content: "Added " + data.name + " to " + channel.name + ".", ephemeral: true });
+
+        new Updater(data).start(config.sourceDelay * 1000, config.sourceRate * 1000);
+        getMessenger(interaction.guildId).add(data);
+        let profile = getGuildProfile(interaction.guildId);
+        profile.servers.push(data);
+        profile.save();
+
+        await interaction.reply({ content: "Successfully added " + data.name + " to <#" + channel.id + ">." });
     },
 };
 

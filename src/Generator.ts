@@ -2,15 +2,25 @@ import { ColorResolvable, MessageEmbed, MessagePayload } from "discord.js";
 import { config } from ".";
 import { ServerData } from "./ServerData";
 
+/**
+ * Responsible for generating a message based on a given ServerData
+ */
 export interface Generator {
+    /**
+     * Generates the message. May be text, embed, etc.
+     * @param data ServerData to generate from
+     */
     generateMessage(data: ServerData): MessagePayload;
 }
 
+/**
+ * Default implementation that generates an embed for a given ServerData
+ */
 export class EmbedGenerator implements Generator {
     generateMessage(data: ServerData): any {
         let embed = new MessageEmbed();
 
-        embed.setTitle(data.sourceName.length == 0 || !config.useSteamName ? data.name : data.sourceName);
+        embed.setTitle(data.sourceName.length == 0 || !config.useServerName ? data.name : data.sourceName);
 
         let len = 0;
         let desc = "";
@@ -39,6 +49,7 @@ export class EmbedGenerator implements Generator {
         if (data.image)
             embed.setImage(data.image + "?t=" + Math.round(Date.now() / 1000 / 60 / parseInt(config.cacheRate)));
 
+        // Don't show new players when the server starts up
         if (data.joined.length > 0 && data.joined.length !== sp) {
             footer += "[+] ";
             for (let p of data.joined)
