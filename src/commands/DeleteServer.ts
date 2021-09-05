@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, MessageEmbed } from "discord.js";
 import { getData, getGuildProfile } from "..";
 import { ServerData } from "../ServerData";
 
@@ -27,6 +27,14 @@ module.exports = {
         let profile = getGuildProfile(interaction.guildId);
         profile.servers = profile.servers.filter((data: ServerData) => data.name != name);
         profile.save();
-        await interaction.reply({ content: "Successfully deleted server", ephemeral: true });
+        let embed = new MessageEmbed();
+
+        embed.setTitle("Success");
+        embed.setDescription("Deleted " + server.name + " (" + server.ip + ").");
+        let url = interaction.user.avatarURL();
+        embed.setFooter("Called by " + interaction.user.username + "#" + interaction.user.discriminator, url ? url : undefined);
+
+        embed.setColor("RED");
+        await interaction.reply({ embeds: [embed] });
     },
 };

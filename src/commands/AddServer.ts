@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, MessageEmbed } from "discord.js";
 import { config, getData, getGuildProfile, getMessenger } from "..";
 import { ServerData } from "../ServerData";
 import { Updater } from "../Updater";
@@ -69,7 +69,15 @@ module.exports = {
         profile.servers.push(data);
         profile.save();
 
-        await interaction.reply({ content: "Successfully added " + data.name + " to <#" + channel.id + ">." });
+        let embed = new MessageEmbed();
+        embed.setTitle("Success");
+        embed.setDescription("Added " + data.name + " (" + data.ip + ")  to _" + channel.name + "_.")
+        embed.addField("Game", data.type, true);
+        embed.addField("Color", data.color ? data.color : "Dynamic", true);
+        if (data.image)
+            embed.addField("Image", data.image, true);
+        embed.setColor("GREEN");
+        await interaction.reply({ embeds: [embed] });
     },
 };
 

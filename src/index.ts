@@ -41,9 +41,9 @@ export let guilds = loadGuildConfigs();
 
 loadClientProfiles();
 loadCommands();
-registerCommands();
 
 client.once("ready", () => {
+  registerCommands();
   start = Date.now();
   let serverCount = getServers().length;
 
@@ -79,7 +79,7 @@ client.on('interactionCreate', async interaction => {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
-    await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    await interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
   }
 });
 
@@ -197,9 +197,18 @@ export function registerCommands(guild?: string) {
   (async () => {
     if (guild) {
       client.guilds.cache.get(guild)?.fetch().then(g => {
+        g.commands.fetch().then(cmds => {
+          for (let cmd of cmds) {
+            if (commands.has(cmd[1].name))
+              continue;
+            cmd[1].delete();
+          }
+        });
         rest.put(
-          Routes.applicationGuildCommands(config.clientId, guild[0]), { body: commandArray },
-        );
+          Routes.applicationGuildCommands(config.clientId, g.id), { body: commandArray },
+        ).then(() => {
+          updatePermissions(g.id);
+        });
       });
       return;
     }
@@ -207,7 +216,6 @@ export function registerCommands(guild?: string) {
       registerCommands(guild[0]);
     }
   })();
-  updatePermissions(guild);
 }
 
 /**
@@ -218,7 +226,11 @@ export function updatePermissions(guild?: string) {
   (async () => {
     if (guild) {
       client.guilds.cache.get(guild)?.fetch().then(async g => {
-        let serverPerm: ApplicationCommandPermissionData[] = [];
+        let serverPerm: ApplicationCommandPermissionData[] = [{
+          id: g.roles.highest.id,
+          permission: true,
+          type: "ROLE"
+        }];
         g.roles.fetch().then(roles => {
           for (let role of roles) {
             if (!role[1].permissions.has("MANAGE_GUILD") && !getGuildProfile(g.id).elevated.includes(role[0]))
