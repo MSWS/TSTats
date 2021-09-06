@@ -1,10 +1,10 @@
 import { ApplicationCommandPermissionData, Client, Intents } from "discord.js";
-import { EmbedGenerator } from "./Generator";
-import { Messenger } from "./Messenger";
 import { ClientProfile } from "./ClientProfile";
+import { EmbedGenerator } from "./Generator";
+import { GuildProfile } from "./GuildProfile";
+import { Messenger } from "./Messenger";
 import { ServerData } from "./ServerData";
 import { Updater } from "./Updater";
-import { GuildProfile } from "./GuildProfile";
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
@@ -30,7 +30,7 @@ export let guilds: Map<string, ServerData[]>;
 let rest: any;
 const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
-const updaters: Updater[] = [];
+const updateMap = new Map<string, Updater>();
 
 init();
 
@@ -57,7 +57,7 @@ export function init() {
     for (let server of getServers()) {
       let update = new Updater(server);
       update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
-      updaters.push(update);
+      addUpdater(update.data.guild, update.data.name, update);
     }
 
     for (let [guild, data] of guilds.entries()) {
@@ -102,9 +102,9 @@ export function init() {
 export function restart() {
   for (let msg of messengerMap.values())
     msg.stop();
-  for (let update of updaters)
+  for (let update of updateMap.values())
     update.stop();
-  updaters.length = 0;
+  updateMap.clear();
   messengerMap.clear();
 
   client.destroy();
@@ -346,8 +346,28 @@ export function getMessenger(guild: string): Messenger {
  * Adds an updater to track, will be stopped if exited
  * @param updater Updater to add
  */
-export function addUpdater(updater: Updater) {
-  updaters.push(updater);
+export function addUpdater(guild: string, name: string, updater: Updater) {
+  updateMap.set(guild + name, updater);
+}
+
+/**
+ * Gets an updater
+ * @param guild Guild that the updater belongs to
+ * @param name Server name the updater belongs to
+ * @returns The updater linked to the guild + name, or undefined if none
+ */
+export function getUpdater(guild: string, name: string): Updater | undefined {
+  return updateMap.get(guild + name);
+}
+
+/**
+ * Stops and removes the given updater
+ * @param guild Guild that the updater belongs to
+ * @param name Server name the updater belongs to
+ */
+export function removeUpdater(guild: string, name: string) {
+  getUpdater(guild, name)?.stop();
+  updateMap.delete(guild + name);
 }
 
 /**

@@ -1,6 +1,6 @@
 import { generator } from ".";
 import { ServerData } from "./ServerData";
-import { getTextChannel, sendMessageID } from "./Utils";
+import { deleteMessage, getTextChannel, sendMessageID } from "./Utils";
 
 /**
  * Responsible for purging and timing the sending of messages
@@ -27,6 +27,11 @@ export class Messenger {
     add(data: ServerData) {
         this.data.push(data);
         setTimeout(() => this.send(data), 1000);
+    }
+
+    remove(data: ServerData) {
+        this.data = this.data.filter(d => d.name != data.name);
+        deleteMessage(data);
     }
 
     /**

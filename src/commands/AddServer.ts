@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
-import { CommandInteraction, MessageEmbed } from "discord.js";
+import { CommandInteraction, GuildChannel, MessageEmbed } from "discord.js";
 import { addUpdater, config, getData, getGuildProfile, getMessenger } from "..";
 import { ServerData } from "../ServerData";
 import { Updater } from "../Updater";
@@ -9,7 +9,6 @@ import { getTextChannel } from "../Utils";
 module.exports = {
     data: new SlashCommandBuilder().setName("addserver")
         .setDescription("Adds a server to the bot")
-        .addChannelOption((option: SlashCommandChannelOption) => option.setName("channel").setDescription("The channel to log server status to").setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("name").setDescription("The name of the server").setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("ip").setDescription("The IP of the server").setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("type").setDescription("The type of game").addChoices([
@@ -35,22 +34,26 @@ module.exports = {
             ["Teamspeak 3", "teamspeak3"],
             ["Terraria - TShock (2011)", "terraria"]
         ]).setRequired(true))
+        .addChannelOption((option: SlashCommandChannelOption) => option.setName("channel").setDescription("The channel to log server status to").setRequired(false))
         .addStringOption((option: SlashCommandStringOption) => option.setName("image").setDescription("Graph link if available")).setDefaultPermission(false)
         .setDefaultPermission(false),
     async execute(interaction: CommandInteraction) {
+        if (!interaction.guildId || !interaction.inGuild()) {
+            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
+            return;
+        }
         let channel = interaction.options.getChannel("channel");
+        if (!channel && interaction.channel)
+            channel = interaction.channel as GuildChannel;
         if (!channel) {
-            await interaction.reply({ content: "No channel exists by that name.", ephemeral: true });
+            await interaction.reply({ content: "Unknown channel.", ephemeral: true });
             return;
         }
         if (!getTextChannel(channel?.id)) {
             await interaction.reply({ content: "Invalid channel: <#" + channel.id + "> is not a text channel.", ephemeral: true });
             return;
         }
-        if (!interaction.guildId || !interaction.inGuild()) {
-            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
-            return;
-        }
+
         if (!interaction.guild?.channels.cache.get(channel.id)?.permissionsFor(interaction.user)?.has("MANAGE_CHANNELS")) {
             await interaction.reply({ content: "You require the `MANAGE_CHANNELS` permission for <#" + channel.id + ">.", ephemeral: true });
             return;
@@ -71,8 +74,6 @@ module.exports = {
         let type = interaction.options.getString("type");
         if (!image)
             image = undefined;
-        if (!checkParam("name", interaction) || !checkParam("ip", interaction) || !checkParam("channel", interaction))
-            return;
         if (!ip)
             return;
 
@@ -87,7 +88,7 @@ module.exports = {
 
         let update = new Updater(data);
         update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
-        addUpdater(update);
+        addUpdater(data.guild, data.channel, update);
         getMessenger(interaction.guildId).add(data);
         let profile = getGuildProfile(interaction.guildId);
         profile.servers.push(data);
@@ -104,11 +105,3 @@ module.exports = {
         await interaction.reply({ embeds: [embed] });
     },
 };
-
-async function checkParam(name: string, interaction: CommandInteraction): Promise<boolean> {
-    if (!interaction.options.get(name)) {
-        await interaction.reply("Must specify " + name);
-        return false;
-    }
-    return true;
-}

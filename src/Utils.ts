@@ -20,6 +20,12 @@ export function sendMessage(channel: TextChannel, msg: any, data: ServerData) {
     forceMessage(channel, msg, data);
 }
 
+export function deleteMessage(data: ServerData) {
+    if (!messages.has(data.name))
+        return;
+    messages.get(data.name)?.fetch().then(m => m.delete());
+}
+
 function forceMessage(channel: TextChannel, msg: any, data: ServerData) {
     if (msg instanceof MessagePayload) {
         channel.send(msg).then(msg => messages.set(data.name, msg));

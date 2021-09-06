@@ -34,7 +34,7 @@ export class Updater {
                 port: this.port,
                 maxAttempts: 3
             }).then((state: any) => {
-                if (this.data.ping == -1)
+                if (this.data.ping == -1 && this.everOnline)
                     this.notifyStatus(true);
                 this.data.sourceName = state.name;
                 if (this.data.map != state.map && this.everOnline)

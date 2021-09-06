@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { getData, getGuildProfile } from "..";
+import { getData, getGuildProfile, getMessenger, removeUpdater } from "..";
 import { ServerData } from "../ServerData";
 
 module.exports = {
@@ -33,6 +33,9 @@ module.exports = {
         embed.setDescription("Deleted " + server.name + " (" + server.ip + ").");
         let url = interaction.user.avatarURL();
         embed.setFooter("Called by " + interaction.user.username + "#" + interaction.user.discriminator, url ? url : undefined);
+
+        getMessenger(interaction.guildId).remove(server);
+        removeUpdater(interaction.guildId, server.name);
 
         embed.setColor("RED");
         await interaction.reply({ embeds: [embed] });
