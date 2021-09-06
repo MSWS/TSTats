@@ -58,6 +58,7 @@ module.exports = {
         embed.setColor("BLUE");
         embed.addField("Players", globalPlayers + "/" + globalMax + " (" + (Math.round(globalPlayers / globalMax * 1000) / 10) + "%)", true);
         embed.addField("Servers", servers.length + "", true);
+        embed.addField("Guilds", client.guilds.cache.size + "", true);
 
         if (globalUnpopular != globalPopular && globalUnpopular && globalPopular) {
             embed.addField("Most Popular", globalPopular.name + " from " + globalPopularGuild + " (" + (Math.round(globalPopular.getOnline() / globalPlayers * 1000) / 10) + "%)");
