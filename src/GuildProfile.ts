@@ -1,5 +1,3 @@
-import { Role } from "discord.js";
-import { client } from ".";
 import { ServerData } from "./ServerData";
 
 const fs = require('fs');

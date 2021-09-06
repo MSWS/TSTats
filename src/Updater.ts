@@ -58,7 +58,7 @@ export class Updater {
                 if (newData?.left)
                     for (let p of newData.left)
                         this.notifyPlayer(p, false);
-            }).catch((error: Error) => {
+            }).catch(() => {
                 if (this.data.ping != -1)
                     this.notifyStatus(false);
                 this.data.players = [];

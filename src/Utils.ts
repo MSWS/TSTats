@@ -1,4 +1,4 @@
-import { Channel, Message, MessageAttachment, MessageEmbed, MessagePayload, TextChannel } from "discord.js";
+import { Channel, Message, MessageEmbed, MessagePayload, TextChannel } from "discord.js";
 import { client } from ".";
 import { ServerData } from "./ServerData";
 
@@ -12,7 +12,7 @@ export function sendMessage(channel: TextChannel, msg: any, data: ServerData) {
             } else if (msg instanceof MessageEmbed) {
                 m.edit({ embeds: [msg] });
             }
-        }).catch((error: Error) => {
+        }).catch(() => {
             forceMessage(channel, msg, data);
         });
         return;

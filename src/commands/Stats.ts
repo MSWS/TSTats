@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { client, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start } from "..";
+import { client, config, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start } from "..";
 import { ServerData } from "../ServerData";
 
 module.exports = {
@@ -65,6 +65,7 @@ module.exports = {
         }
 
         embed.addField("Uptime", date.toISOString().substring(11, 19));
+        embed.addField("Build", config.build + "", true);
         embed.setFooter("Requested by " + interaction.member?.user.username);
         await interaction.reply({ embeds: [embed] });
 

@@ -88,7 +88,7 @@ export function init() {
       await command.execute(interaction);
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch((e: Error) => {
+      await interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch(() => {
         interaction.followUp({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
       });
     }
