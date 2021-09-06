@@ -36,9 +36,8 @@ const rest = new REST({ version: '9' }).setToken(config.token);
 const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
 
+checkConfig();
 export let guilds = loadGuildConfigs();
-
-
 loadClientProfiles();
 loadCommands();
 
@@ -57,6 +56,7 @@ client.once("ready", () => {
     new Updater(server).start(config.sourceDelay * 1000, config.sourceRate * 1000);
 
   setInterval(() => {
+    serverCount = getServers().length;
     let count = getPlayerCount();
     client.user?.setPresence({
       status: "online",
@@ -64,7 +64,7 @@ client.once("ready", () => {
         name: count + " player" + (count == 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount == 1 ? "" : "s"), type: "WATCHING"
       }]
     });
-  }, config.topicRate * 1000);
+  }, (config.topicRate ? config.topicRate : 300) * 1000);
 });
 
 client.on('interactionCreate', async interaction => {
@@ -253,6 +253,18 @@ export function updatePermissions(guild?: string) {
       updatePermissions(guild[0]);
     }
   })();
+}
+
+function checkConfig(): boolean {
+  let valid = true;
+  for (let field of ["token", "clientId", "discordRate", "sourceRate", "discordDelay", "sourceDelay", "topicRate", "useServerName", "lineLength", "cacheRate"]) {
+    if (config[field] == undefined) {
+      console.warn("config.json does NOT have " + field + " set!");
+      valid = false;
+    }
+  }
+
+  return valid;
 }
 
 /**

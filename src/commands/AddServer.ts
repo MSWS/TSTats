@@ -81,9 +81,9 @@ module.exports = {
     },
 };
 
-function checkParam(name: string, interaction: CommandInteraction): boolean {
+async function checkParam(name: string, interaction: CommandInteraction): Promise<boolean> {
     if (!interaction.options.get(name)) {
-        interaction.reply("Must specify " + name);
+        await interaction.reply("Must specify " + name);
         return false;
     }
     return true;

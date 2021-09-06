@@ -36,7 +36,6 @@ export class Updater {
                 if (this.data.ping == -1)
                     this.notifyStatus(true);
                 this.data.sourceName = state.name;
-
                 if (this.data.map != state.map)
                     this.notifyMap(state.map);
                 this.data.map = state.map;
@@ -60,9 +59,8 @@ export class Updater {
                     for (let p of newData.left)
                         this.notifyPlayer(p, false);
             }).catch((error: Error) => {
-                if (this.data.ping != -1) {
+                if (this.data.ping != -1)
                     this.notifyStatus(false);
-                }
                 this.data.players = [];
                 this.data.map = "Offline";
                 this.data.ping = -1;
