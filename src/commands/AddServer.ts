@@ -1,11 +1,10 @@
 import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { config, getData, getGuildProfile, getMessenger } from "..";
+import { addUpdater, config, getData, getGuildProfile, getMessenger } from "..";
 import { ServerData } from "../ServerData";
 import { Updater } from "../Updater";
 import { getTextChannel } from "../Utils";
-
 
 module.exports = {
     data: new SlashCommandBuilder().setName("addserver")
@@ -86,7 +85,9 @@ module.exports = {
             type: type ? type : undefined
         });
 
-        new Updater(data).start(config.sourceDelay * 1000, config.sourceRate * 1000);
+        let update = new Updater(data);
+        update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
+        addUpdater(update);
         getMessenger(interaction.guildId).add(data);
         let profile = getGuildProfile(interaction.guildId);
         profile.servers.push(data);

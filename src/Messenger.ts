@@ -7,6 +7,7 @@ import { getTextChannel, sendMessageID } from "./Utils";
  */
 export class Messenger {
     data: ServerData[] = [];
+    stopped = false;
 
     public constructor(servers: ServerData[]) {
         this.data = servers;
@@ -15,13 +16,16 @@ export class Messenger {
         }
     }
 
+    stop() {
+        this.stopped = true;
+    }
+
     /**
      * Adds the specified serverdata to be sent
      * @param data ServerData to add
      */
     add(data: ServerData) {
         this.data.push(data);
-        this.update(data);
         setTimeout(() => this.send(data), 1000);
     }
 
@@ -87,6 +91,8 @@ export class Messenger {
      */
     public start(cooldown: number, rate: number) {
         setTimeout(() => {
+            if (this.stopped)
+                return;
             this.data.forEach(d => this.send(d));
             for (let d of this.data)
                 this.updateTopic(d.channel);

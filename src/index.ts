@@ -16,74 +16,99 @@ fs.mkdir(path.resolve(__dirname, "./configs"), () => { });
 
 export const clientProfiles = new Map<string, ClientProfile>();
 
-const commandFiles = fs.readdirSync(path.resolve(__dirname, './commands')).filter((file: string) => file.endsWith('.js')); // Command Directory
-const profileFile = fs.readdirSync(path.resolve(__dirname, "./profiles")).filter((file: string) => file.endsWith(".json")); // Client Profiles Directory
-const configFiles = fs.readdirSync(path.resolve(__dirname, "./configs")).filter((file: string) => file.endsWith(".json")); // Guild Profiles Directory
-
 const commands = new Map<string, any>(); // Map for execution
 const commandArray: any[] = []; // Array for registrating commands
 
-export let config = require(path.resolve(__dirname, "./config.json")); // Main config
+export let config: any; // Main config
 export let generator = new EmbedGenerator();
-export const client = new Client({
-  allowedMentions: { parse: ['users', 'roles'], repliedUser: true },
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
-});
+export let client: Client;
 
 export let start: number;
+export let guilds: Map<string, ServerData[]>;
 
-const rest = new REST({ version: '9' }).setToken(config.token);
+let rest: any;
 const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
+const updaters: Updater[] = [];
 
-checkConfig();
-export let guilds = loadGuildConfigs();
-loadClientProfiles();
-loadCommands();
+init();
 
-client.once("ready", () => {
-  registerCommands();
-  start = Date.now();
-  let serverCount = getServers().length;
+export function init() {
+  client = new Client({
+    allowedMentions: { parse: ['users', 'roles'], repliedUser: true },
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
+  });
+  config = require(path.resolve(__dirname, "./config.json"));
+  checkConfig();
 
-  for (let [guild, data] of guilds.entries()) {
-    let msg = new Messenger(data);
-    messengerMap.set(guild, msg);
-    msg.start(config.discordDelay * 1000, config.discordRate * 1000);
-  }
+  rest = new REST({ version: '9' }).setToken(config.token);
 
-  for (let server of getServers())
-    new Updater(server).start(config.sourceDelay * 1000, config.sourceRate * 1000);
+  guilds = loadGuildConfigs();
+  loadClientProfiles();
+  loadCommands();
 
-  setInterval(() => {
-    serverCount = getServers().length;
-    let count = getPlayerCount();
-    client.user?.setPresence({
-      status: "online",
-      activities: [{
-        name: count + " player" + (count == 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount == 1 ? "" : "s"), type: "WATCHING"
-      }]
-    });
-  }, (config.topicRate ? config.topicRate : 300) * 1000);
-});
+  client.on("ready", () => {
+    registerCommands();
+    start = Date.now();
+    let serverCount = getServers().length;
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand()) return;
+    for (let [guild, data] of guilds.entries()) {
+      let msg = new Messenger(data);
+      messengerMap.set(guild, msg);
+      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
+    }
 
-  let command: any = commands.get(interaction.commandName);
+    for (let server of getServers()) {
+      let update = new Updater(server);
+      update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
+      updaters.push(update);
+    }
 
-  if (!command)
-    return;
+    setInterval(() => {
+      serverCount = getServers().length;
+      let count = getPlayerCount();
+      client.user?.setPresence({
+        status: "online",
+        activities: [{
+          name: count + " player" + (count == 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount == 1 ? "" : "s"), type: "WATCHING"
+        }]
+      });
+    }, (config.topicRate ? config.topicRate : 300) * 1000);
+  });
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    await interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
-  }
-});
+  client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
 
-client.login(config.token);
+    let command: any = commands.get(interaction.commandName);
+
+    if (!command)
+      return;
+
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(error);
+      await interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch((e: Error) => {
+        interaction.followUp({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
+      });
+    }
+  });
+
+  client.login(config.token);
+}
+
+export function restart() {
+  for (let msg of messengerMap.values())
+    msg.stop();
+  for (let update of updaters)
+    update.stop();
+  updaters.length = 0;
+  messengerMap.clear();
+
+  client.destroy();
+  // init();
+  process.exit();
+}
 
 /**
  * Returns all the servers that are loaded
@@ -151,6 +176,7 @@ export function saveConfig() {
  * @returns Map of guild IDs to server data array
  */
 function loadGuildConfigs(): Map<string, ServerData[]> {
+  const configFiles = fs.readdirSync(path.resolve(__dirname, "./configs")).filter((file: string) => file.endsWith(".json"));
   for (let file of configFiles as string) {
     let id = file.substring(0, file.length - ".json".length);
     let profile = new GuildProfile(id);
@@ -168,6 +194,8 @@ function loadGuildConfigs(): Map<string, ServerData[]> {
  * Loads client profiles from the profileFile, and populates the clientProfiles map
  */
 function loadClientProfiles() {
+  clientProfiles.clear();
+  const profileFile = fs.readdirSync(path.resolve(__dirname, "./profiles")).filter((file: string) => file.endsWith(".json"));
   for (let file of profileFile as string) {
     let id = file.substring(0, file.length - ".json".length);
     let profile = new ClientProfile(id);
@@ -180,6 +208,10 @@ function loadClientProfiles() {
  * Loads and populates both the commands map (for execution) and commandArray (for registration).
  */
 function loadCommands() {
+  const commandFiles = fs.readdirSync(path.resolve(__dirname, './commands')).filter((file: string) => file.endsWith('.js'));
+  commands.clear();
+  commandArray.length = 0;
+
   for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     commands.set(command.data.name, command);
@@ -306,6 +338,14 @@ export function getMessenger(guild: string): Messenger {
     messengerMap.set(guild, messenger);
   }
   return messenger;
+}
+
+/**
+ * Adds an updater to track, will be stopped if exited
+ * @param updater Updater to add
+ */
+export function addUpdater(updater: Updater) {
+  updaters.push(updater);
 }
 
 /**

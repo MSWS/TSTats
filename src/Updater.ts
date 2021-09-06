@@ -9,8 +9,8 @@ export class Updater {
     ip: string;
     port: number | undefined;
     data: ServerData;
-    cancelled = false;
     Gamedig = require("gamedig");
+    stopped = false;
 
     public constructor(data: ServerData) {
         let args = data.ip.split(":");
@@ -136,16 +136,18 @@ export class Updater {
         return (reg && reg.test(value)) || value.includes(query);
     }
 
+    stop() {
+        this.stopped = true;
+    }
+
     /**
      * Starts the repeating task to send discord messages.
      * @param cooldown Time to wait before starting task
      * @param rate Time between tasks
      */
     public start(cooldown: number, rate: number) {
-        if (this.cancelled)
-            return;
         setTimeout(() => {
-            if (this.cancelled)
+            if (this.stopped)
                 return;
             this.update();
             this.start(rate, rate);

@@ -1,8 +1,7 @@
-import { CommandInteraction, Message, MessageEmbed } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { CommandInteraction, MessageEmbed } from "discord.js";
 import { client, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start } from "..";
 import { ServerData } from "../ServerData";
-
-const { SlashCommandBuilder } = require('@discordjs/builders');
 
 module.exports = {
     data: new SlashCommandBuilder()
