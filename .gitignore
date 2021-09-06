@@ -19,4 +19,3 @@ node_modules
 lib
 package-lock.json
 *.js
-src/config.json
