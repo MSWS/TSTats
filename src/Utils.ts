@@ -51,8 +51,12 @@ export function getTextChannel(id: string): TextChannel | undefined {
 
 export function sendDM(id: string, msg: any) {
     client.users.fetch(id).then(user => {
+        if (!user) {
+            console.error("Unable to fetch user from " + id);
+            return;
+        }
         user.createDM().then(channel => {
             channel.send(msg);
-        })
-    });
+        }).catch(e => console.error(e));
+    }).catch(e => console.error(e));
 }

@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { client, config, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start } from "..";
+import { client, config, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start, version } from "..";
 import { ServerData } from "../ServerData";
 
 module.exports = {
@@ -64,8 +64,8 @@ module.exports = {
             embed.addField("Least Popular", globalUnpopular.name + " from " + globalUnpopularGuild + " (" + (Math.round(globalUnpopular.getOnline() / globalPlayers * 1000) / 10) + "%)");
         }
 
-        embed.addField("Uptime", date.toISOString().substring(11, 19));
-        embed.addField("Build", config.build + "", true);
+        embed.addField("Uptime", date.toISOString().substring(11, 19), true);
+        embed.addField("Build Version", version + "." + config.build + "", true);
         embed.setFooter("Requested by " + interaction.member?.user.username);
         await interaction.reply({ embeds: [embed] });
 

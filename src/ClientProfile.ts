@@ -33,11 +33,13 @@ export class ClientProfile {
 }
 
 export class ClientOption {
+    guild: string;
     server: string;
     type: string;
     value: string | null;
 
-    constructor(data: { server: string, type: string, value: string | null }) {
+    constructor(data: { guild: string, server: string, type: string, value: string | null }) {
+        this.guild = data.guild;
         this.server = data.server;
         this.type = data.type;
         this.value = data.value;

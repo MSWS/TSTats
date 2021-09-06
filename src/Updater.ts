@@ -11,6 +11,7 @@ export class Updater {
     data: ServerData;
     Gamedig = require("gamedig");
     stopped = false;
+    everOnline = false;
 
     public constructor(data: ServerData) {
         let args = data.ip.split(":");
@@ -36,7 +37,7 @@ export class Updater {
                 if (this.data.ping == -1)
                     this.notifyStatus(true);
                 this.data.sourceName = state.name;
-                if (this.data.map != state.map)
+                if (this.data.map != state.map && this.everOnline)
                     this.notifyMap(state.map);
                 this.data.map = state.map;
                 this.data.max = parseInt(state.maxplayers);
@@ -52,14 +53,15 @@ export class Updater {
                 this.data.players = players;
                 getMessenger(this.data.guild)?.update(this.data);
                 let newData = getMessenger(this.data.name)?.getServerData(this.data);
-                if (newData?.joined)
+                if (newData?.joined && this.everOnline)
                     for (let p of newData.joined)
                         this.notifyPlayer(p, true);
-                if (newData?.left)
+                if (newData?.left && this.everOnline)
                     for (let p of newData.left)
                         this.notifyPlayer(p, false);
+                this.everOnline = true;
             }).catch(() => {
-                if (this.data.ping != -1)
+                if (this.data.ping != -1 && this.everOnline)
                     this.notifyStatus(false);
                 this.data.players = [];
                 this.data.map = "Offline";
@@ -79,6 +81,8 @@ export class Updater {
     notifyStatus(status: boolean) {
         for (let profile of clientProfiles.values()) {
             for (let option of profile.options) {
+                if (option.guild != this.data.guild)
+                    continue;
                 if (option.server != this.data.name || option.type != "status")
                     continue;
                 sendDM(profile.id, this.data.name + " is " + (status ? "now online" : "now offline"));
@@ -93,6 +97,8 @@ export class Updater {
     notifyMap(newMap: string) {
         for (let profile of clientProfiles.values()) {
             for (let option of profile.options) {
+                if (option.guild != this.data.guild)
+                    continue;
                 if (option.server != this.data.name || option.type != "map")
                     continue;
                 if (!this.matches(option.value, newMap))
@@ -110,6 +116,8 @@ export class Updater {
     notifyPlayer(player: string, online: boolean) {
         for (let profile of clientProfiles.values()) {
             for (let option of profile.options) {
+                if (option.guild != this.data.guild)
+                    continue;
                 if (option.server != this.data.name || option.type != "player")
                     continue;
                 if (!this.matches(option.value, player))

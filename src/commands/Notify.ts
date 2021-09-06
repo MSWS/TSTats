@@ -57,7 +57,7 @@ module.exports = {
             return;
         }
 
-        let opt = new ClientOption({ server: server.name, type: type, value: interaction.options.getString("value") });
+        let opt = new ClientOption({ guild: interaction.guildId, server: server.name, type: type, value: interaction.options.getString("value") });
 
         if (type === "player" && !opt.value) {
             await interaction.reply({ content: "You must specify a player to watch.", ephemeral: true });

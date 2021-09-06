@@ -22,6 +22,7 @@ const commandArray: any[] = []; // Array for registrating commands
 export let config: any; // Main config
 export let generator = new EmbedGenerator();
 export let client: Client;
+export let version = "1.0.0";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
@@ -47,21 +48,22 @@ export function init() {
   loadClientProfiles();
   loadCommands();
 
+
   client.on("ready", () => {
     registerCommands();
     start = Date.now();
     let serverCount = getServers().length;
 
-    for (let [guild, data] of guilds.entries()) {
-      let msg = new Messenger(data);
-      messengerMap.set(guild, msg);
-      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
-    }
-
     for (let server of getServers()) {
       let update = new Updater(server);
       update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
       updaters.push(update);
+    }
+
+    for (let [guild, data] of guilds.entries()) {
+      let msg = new Messenger(data);
+      messengerMap.set(guild, msg);
+      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
     }
 
     setInterval(() => {
