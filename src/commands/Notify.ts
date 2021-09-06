@@ -60,7 +60,7 @@ module.exports = {
         let opt = new ClientOption({ server: server.name, type: type, value: interaction.options.getString("value") });
 
         if (type === "player" && !opt.value) {
-            await interaction.reply({ content: "You must specify a player to watch", ephemeral: true });
+            await interaction.reply({ content: "You must specify a player to watch.", ephemeral: true });
             return;
         }
 
@@ -81,6 +81,6 @@ module.exports = {
             default:
                 break;
         }
-        await interaction.reply({ content: "You will now be notified " + str });
+        await interaction.reply({ content: "You will now be notified " + str + ".", ephemeral: true });
     },
 };

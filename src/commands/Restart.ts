@@ -13,7 +13,7 @@ module.exports = {
             return;
         }
 
-        await interaction.reply("Restarting...");
+        await interaction.reply({ content: "Restarting...", ephemeral: true });
         restart();
     }
 };
