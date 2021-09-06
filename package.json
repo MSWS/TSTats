@@ -4,7 +4,7 @@
   "description": "",
   "main": "./lib/index.js",
   "scripts": {
-    "prebuild": "copyfiles -s -u 1 src/config.json lib/ && node lib/build.js",
+    "prebuild": "copyfiles -s -u 1 src/config.json lib/ && tsc && node lib/build.js",
     "build": "tsc",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublish": "npm run build"
