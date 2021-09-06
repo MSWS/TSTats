@@ -11,7 +11,7 @@ build++;
 
 config["build"] = build;
 
-fs.writeFile(dir, JSON.stringify(config), { flag: "w+" }, (e: Error) => {
+fs.writeFile(dir, JSON.stringify(config, null, 2), { flag: "w+" }, (e: Error) => {
     if (e)
         console.error(e);
 });

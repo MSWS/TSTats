@@ -33,7 +33,7 @@ export class GuildProfile {
     }
 
     save() {
-        let data = JSON.stringify({ id: this.id, servers: this.servers, elevated: this.elevated });
+        let data = JSON.stringify({ id: this.id, servers: this.servers, elevated: this.elevated }, null, 2);
         fs.writeFile(this.file, data, { flag: "w+" }, (e: Error) => {
             if (e)
                 console.error(e);

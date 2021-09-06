@@ -24,7 +24,7 @@ export class ClientProfile {
     }
 
     save() {
-        let data = JSON.stringify({ id: this.id, options: this.options });
+        let data = JSON.stringify({ id: this.id, options: this.options }, null, 2);
         fs.writeFile(this.file, data, { flag: "w+" }, (e: Error) => {
             if (e)
                 console.error(e);
