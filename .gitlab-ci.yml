@@ -10,15 +10,12 @@ image: node:latest
 # This folder is cached between builds
 # https://docs.gitlab.com/ee/ci/yaml/index.html#cache
 cache:
-  paths:
-    - node_modules/
+    paths:
+        - node_modules/
 
 build:
     script:
-        - npm install typescript -g
-        - npm install gamedig
         - npm init --yes
-        - npx tsc src/index.ts --downlevelIteration
-        - npm run build
+        - npm run prebuild
     tags:
         - docker
