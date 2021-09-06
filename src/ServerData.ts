@@ -65,6 +65,15 @@ export class ServerData {
         this.players = data.players;
     }
 
+    getAdmins(): number {
+        let admins = 0;
+        for (let player of this.players) {
+            if (player.startsWith("=(eG"))
+                admins++;
+        }
+        return admins;
+    }
+
     /**
      * Gets the amount of online players. Due to different behavior in Gamedig's API, this should be used to get the amount of online players.
      * @returns 

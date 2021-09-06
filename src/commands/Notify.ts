@@ -8,7 +8,7 @@ module.exports = {
         .setDescription("Toggles notification for when a server's status changes")
         .addStringOption(o => o.setName("server").setDescription("The server whose status will be monitored").setRequired(true))
         .addStringOption(o => o.setName("type").setDescription("The thing to monitor").addChoices([
-            ["Map Change", "map"], ["Online/Offline Status", "status"], ["Player Join/Leave", "player"], ["Reset", "reset"], ["Clear", "reset"]
+            ["Map Change", "map"], ["Online/Offline Status", "status"], ["Player Join/Leave", "player"], ["No Admins", "admin"], ["Reset", "reset"], ["Clear", "reset"]
         ]).setRequired(true))
         .addStringOption(o => o.setName("value").setDescription("The name of the map / player to notify")),
     async execute(interaction: CommandInteraction) {
@@ -51,7 +51,7 @@ module.exports = {
 
         if (value == "reset" || value == "clear") {
             if (profile.options)
-                profile.options = profile.options.filter(opt => opt.server != server?.name && opt.type != type);
+                profile.options = profile.options.filter(opt => opt.server != server?.name || opt.type != type);
             await interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + server.name + "." })
             profile?.save();
             return;
@@ -61,6 +61,15 @@ module.exports = {
 
         if (type === "player" && !opt.value) {
             await interaction.reply({ content: "You must specify a player to watch.", ephemeral: true });
+            return;
+        }
+
+        if (profile.options.includes(opt)) {
+            await interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
+            return;
+        }
+        if (profile.options.some(e => e.guild == opt.guild && e.server == opt.server && e.type == opt.type && e.value == opt.value)) {
+            await interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
             return;
         }
 
@@ -78,8 +87,12 @@ module.exports = {
             case "status":
                 str = "when " + server.name + " goes offline/online";
                 break;
-            default:
+            case "admin":
+                str = "when there are no admins on " + server.name;
                 break;
+            default:
+                await interaction.reply({ content: "Unknown notification setting.", ephemeral: true });
+                return;
         }
         await interaction.reply({ content: "You will now be notified " + str + ".", ephemeral: true });
     },

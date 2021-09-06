@@ -19,7 +19,7 @@ export const clientProfiles = new Map<string, ClientProfile>();
 const commands = new Map<string, any>(); // Map for execution
 const commandArray: any[] = []; // Array for registrating commands
 
-export let config: any; // Main config
+export let config = require(path.resolve(__dirname, "./config.json"));
 export let generator = new EmbedGenerator();
 export let client: Client;
 export let version = "1.0.0";

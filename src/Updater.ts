@@ -51,8 +51,10 @@ export class Updater {
                 }
                 this.data.ping = state.ping;
                 this.data.players = players;
+                if (players.length && !this.data.getAdmins() && getMessenger(this.data.guild).getServerData(this.data)?.getAdmins())
+                    this.notifyAdmins();
                 getMessenger(this.data.guild)?.update(this.data);
-                let newData = getMessenger(this.data.name)?.getServerData(this.data);
+                let newData = getMessenger(this.data.name).getServerData(this.data);
                 if (newData?.joined && this.everOnline)
                     for (let p of newData.joined)
                         this.notifyPlayer(p, true);
@@ -71,6 +73,18 @@ export class Updater {
             });
         } catch (error) {
             console.error(error);
+        }
+    }
+
+    notifyAdmins() {
+        for (let profile of clientProfiles.values()) {
+            for (let option of profile.options) {
+                if (option.guild != this.data.guild)
+                    continue;
+                if (option.server != this.data.name || option.type != "admin")
+                    continue;
+                sendDM(profile.id, this.data.name + " has no admins online.");
+            }
         }
     }
 
