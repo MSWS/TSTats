@@ -20,12 +20,12 @@ module.exports = {
             return;
         }
         let server = getData(interaction.guildId, name);
-        if (server == null || !interaction.guild?.channels.cache.get(server.channel)) {
+        if (!server || !interaction.guild?.channels.cache.get(server.channel)) {
             await interaction.reply({ content: "Unknown server specified.", ephemeral: true });
             return;
         }
         let profile = getGuildProfile(interaction.guildId);
-        profile.servers = profile.servers.filter((data: ServerData) => data.name != name);
+        profile.servers = profile.servers.filter((data: ServerData) => data.name != server?.name);
         profile.save();
         let embed = new MessageEmbed();
 
