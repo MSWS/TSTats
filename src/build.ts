@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require('fs');
 
-let dir = path.resolve(__dirname, "./config.json");
+let dir = path.resolve(__dirname, "config.json");
 const config = require(dir);
 
 let build = config["build"];
