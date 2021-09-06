@@ -6,6 +6,7 @@ import { ServerData } from "../ServerData";
 import { Updater } from "../Updater";
 import { getTextChannel } from "../Utils";
 
+
 module.exports = {
     data: new SlashCommandBuilder().setName("addserver")
         .setDescription("Adds a server to the bot")
@@ -13,7 +14,27 @@ module.exports = {
         .addStringOption((option: SlashCommandStringOption) => option.setName("name").setDescription("The name of the server").setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("ip").setDescription("The IP of the server").setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("type").setDescription("The type of game").addChoices([
-            ["Minecraft", "minecraft"], ["CS:GO", "csgo"], ["Grand Theft Auto V", "fivem"], ["7 Days to Die", "7d2d"], ["Age of Chivalry", "ageofchivalry"], ["Age of Empires 2", "aoe2"], ["Arma 3", "arma3"], ["Call of Duty 3", "cod3"]
+            ["7 Days to Die (2013)", "7d2d"],
+            ["Ark: Survival Evolved (2017)", "arkse"],
+            ["ARMA 3 (2013)", "arma3"],
+            ["Battlefield: Bad Company 2 (2010)", "bfbc2"],
+            ["Call of Duty: Modern Warfare 3 (2011)", "codmw3"],
+            ["Counter-Strike: Global Offensive (2012)", "csgo"],
+            ["Counter-Strike: Source (2004)", "css"],
+            ["DayZ (2018)", "dayz"],
+            ["Deus Ex (2000)", "deusex"],
+            ["Doom 3 (2004)", "doom3"],
+            ["Dota 2 (2013)", "dota2"],
+            ["Garry's Mod (2004)", "garrysmod"],
+            ["Grand Theft Auto V - FiveM (2013)", "fivem"],
+            ["Minecraft (2009)", "minecraft"],
+            ["Minecraft Bedrock", "minecraftpe"],
+            ["Mordhau (2019)", "mordhau"],
+            ["Rainbow Six", "r6"],
+            ["Space Engineers", "spaceengineers"],
+            ["Team Fortress 2", "tf2"],
+            ["Teamspeak 3", "teamspeak3"],
+            ["Terraria - TShock (2011)", "terraria"]
         ]).setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("image").setDescription("Graph link if available")).setDefaultPermission(false)
         .setDefaultPermission(false),
@@ -48,6 +69,7 @@ module.exports = {
 
         let ip = interaction.options.getString("ip");
         let image: any = interaction.options.getString("image");
+        let type = interaction.options.getString("type");
         if (!image)
             image = undefined;
         if (!checkParam("name", interaction) || !checkParam("ip", interaction) || !checkParam("channel", interaction))
@@ -61,6 +83,7 @@ module.exports = {
             ip: ip,
             channel: channel.id,
             image: image,
+            type: type ? type : undefined
         });
 
         new Updater(data).start(config.sourceDelay * 1000, config.sourceRate * 1000);
