@@ -11,8 +11,8 @@ import fs = require('fs');
 import path = require("path");
 
 // Create the directories before we fetch them
-fs.mkdir(path.resolve(__dirname, "./profiles"), () => console.error("Unable to make profiles directory"));
-fs.mkdir(path.resolve(__dirname, "./configs"), () => console.error("Unable to make configs directory"));
+fs.mkdir(path.resolve(__dirname, "./profiles"), (e) => { if (e) console.error("Unable to make profiles directory: ", e); });
+fs.mkdir(path.resolve(__dirname, "./configs"), (e) => { if (e) console.error("Unable to make config directory: ", e); });
 
 export const clientProfiles = new Map<string, ClientProfile>();
 
@@ -28,7 +28,7 @@ const globalCommands: Command[] = [];
 export let config: { token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number, useServerName: boolean, lineLength: number, cacheRate: number, build: number };
 export const generator = new EmbedGenerator();
 export let client: Client;
-export const version = "0.0.1";
+export const version = "1.0.0";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
@@ -226,7 +226,6 @@ function loadCommands() {
   for (const file of guildCommandFiles) {
     import(`./commands/guild/${file}`).then(command => {
       commands.set(command.data.name, command);
-      console.log("Registering guild command %s (data: %s)", command.data.name, command.data);
       guildCommands.push(command.data.toJSON());
     });
 
@@ -234,7 +233,6 @@ function loadCommands() {
   for (const file of globalCommandFiles) {
     import(`./commands/global/${file}`).then(command => {
       commands.set(command.data.name, command);
-      console.log("Registering global command %s (data: %s)", command.data.name, command.data);
       globalCommands.push(command.data.toJSON());
     });
   }

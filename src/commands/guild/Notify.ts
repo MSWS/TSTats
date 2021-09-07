@@ -33,11 +33,15 @@ module.exports = {
         const value = interaction.options.getString("value");
 
         if (!profile) {
-            await interaction.reply({ content: "Unable to fetch profile.", ephemeral: true });
+            interaction.reply({ content: "Unable to fetch profile.", ephemeral: true });
             return;
         }
 
         const server = getData(interaction.guildId, sn);
+        if (server && !(await interaction.guild?.channels.fetch(server.channel))?.permissionsFor(interaction.user)?.has("VIEW_CHANNEL")) {
+            interaction.reply({ content: "Unknown server.", ephemeral: true });
+            return;
+        }
 
         if (type === "LIST" || value?.toLowerCase() === "list" || sn.toLowerCase() === "list" || sn.toLowerCase() === "all") {
             let embeds;
@@ -47,22 +51,22 @@ module.exports = {
                 embeds = getEmbed(profile, interaction.guildId, server ? server.name : undefined);
             }
             if (!embeds || !embeds.length) {
-                await interaction.reply({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
+                interaction.reply({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
                 return;
             }
-            await interaction.reply({ embeds: embeds, ephemeral: true });
+            interaction.reply({ embeds: embeds, ephemeral: true });
             return;
         }
 
         if (!server) {
-            await interaction.reply({ content: "Unknown server.", ephemeral: true });
+            interaction.reply({ content: "Unknown server.", ephemeral: true });
             return;
         }
 
         if (type === "CLEAR") {
             if (profile?.options)
                 profile.options = profile?.options.filter(opt => opt.server !== server?.name);
-            await interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true });
+            interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true });
             profile?.save();
             return;
         }
@@ -72,17 +76,17 @@ module.exports = {
         if (value === "CLEAR") {
             if (profile.options)
                 profile.options = profile.options.filter(opt => opt.server !== server?.name || opt.type !== type);
-            await interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
+            interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
             profile?.save();
             return;
         }
 
         if (profile.options.includes(opt)) {
-            await interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
+            interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
             return;
         }
         if (profile.options.some(e => e.guild === opt.guild && e.server === opt.server && e.type === opt.type && e.value === opt.value)) {
-            await interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
+            interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
             return;
         }
 

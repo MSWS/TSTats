@@ -45,7 +45,7 @@ module.exports = {
 
 
         if (!globalPopular || !globalUnpopular) {
-            await interaction.reply("There is insufficient data to calculate statistics.");
+            interaction.reply("There is insufficient data to calculate statistics.");
             return;
         }
 
@@ -83,7 +83,7 @@ module.exports = {
                 embed.addField("Least Popular", guildUnpopular.name + " (" + Math.round(guildUnpopular.getOnline() / guildPlayers * 1000) / 10 + "%)");
             }
             embed.setFooter("Requested by " + interaction.user.username);
-            await interaction.followUp({ embeds: [embed] });
+            interaction.followUp({ embeds: [embed], ephemeral: true });
         }
     },
 };
