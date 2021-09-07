@@ -4,7 +4,7 @@
   "description": "## Installation 1. Install Typescript - `npm install typescript -g`  2. Install Required libraries - `npm install [Library]` (See `package.json` for libraries used) 3. Initialize project - `npm init -y` 4. Compile/Build source - `npx src/index.ts --downlevelIteration` 5. Run program - `npm run build`",
   "main": "index.js",
   "scripts": {
-    "execute": "npm run lint && npm run build && npm run copyconfig",
+    "execute": "npm run lint && npm run copyconfig && npm run build",
     "lint": "eslint . --ext .ts",
     "build": "tsc && tsc src/build.ts && node lib/build.js",
     "copyconfig": "copyfiles -s -u 1 src/config.json lib/",
