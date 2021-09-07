@@ -144,9 +144,11 @@ export class Updater {
                             profile.save();
                             if (click.message.content.startsWith("You will"))
                                 await click.update({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
-                            else
-                                await click.reply({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
-
+                            else {
+                                let used = new MessageButton().setLabel("Unsubscribed").setEmoji("❌").setStyle("DANGER").setCustomId("unused").setDisabled(true);
+                                await click.update({ components: [new MessageActionRow().addComponents(used)] });
+                                await click.followUp({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
+                            }
                         } else if (click.customId == resumeId) {
                             profile.options.push(option);
                             profile.save();
