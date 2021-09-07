@@ -1,3 +1,4 @@
+import { MessageActionRow, MessageButton, MessageComponentInteraction } from "discord.js";
 import { clientProfiles, getMessenger } from ".";
 import { NotifyType } from "./ClientProfile";
 import { ServerData } from "./ServerData";
@@ -37,15 +38,13 @@ export class Updater {
                 port: this.port,
                 maxAttempts: 3
             }).then((state: any) => {
-                if (this.data.ping == -1 && this.everOnline) {
+                if (this.data.ping == -1 && this.everOnline)
                     this.notifs.set(NotifyType.STATUS, true);
-                }
-                // this.notifyStatus(true);
+
                 this.data.sourceName = state.name;
-                if (this.data.map != state.map && this.everOnline) {
-                    // this.notifyMap(state.map);
+                if (this.data.map != state.map && this.everOnline)
                     this.notifs.set(NotifyType.MAP, state.map);
-                }
+
                 this.data.map = state.map;
                 this.data.max = parseInt(state.maxplayers);
                 this.data.connect = state.connect;
@@ -58,16 +57,13 @@ export class Updater {
                 }
                 this.data.ping = state.ping;
                 this.data.players = players;
-                if (players.length && !this.data.getAdmins() && getMessenger(this.data.guild).getServerData(this.data)?.getAdmins()) {
+                if (players.length && !this.data.getAdmins() && getMessenger(this.data.guild).getServerData(this.data)?.getAdmins())
                     this.notifs.set(NotifyType.ADMIN, undefined);
-                    // this.notifyAdmins();
-                }
                 getMessenger(this.data.guild)?.update(this.data);
                 let newData = getMessenger(this.data.guild).getServerData(this.data);
                 if (this.everOnline) {
                     if (newData?.joined)
                         for (let p of newData.joined) {
-                            // this.notifyPlayer(p, true);
                             let joined = this.notifs.get(NotifyType.PLAYER);
                             if (!joined)
                                 joined = [];
@@ -76,7 +72,6 @@ export class Updater {
                         }
                     if (newData?.left)
                         for (let p of newData.left) {
-                            // this.notifyPlayer(p, false);
                             let left = this.notifs.get(NotifyType.PLAYER);
                             if (!left)
                                 left = [];
@@ -91,7 +86,6 @@ export class Updater {
             }).catch(() => {
                 if (this.data.ping != -1 && this.everOnline)
                     this.notifs.set(NotifyType.STATUS, false);
-                // this.notifyStatus(false);
                 this.data.players = [];
                 this.data.map = "Offline";
                 this.data.ping = -1;
@@ -132,8 +126,35 @@ export class Updater {
                 }
                 if (!message)
                     continue;
+                let stopId = Math.random() + "";
+                let stop = new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(stopId)
+                        .setLabel("Unsubscribe").setStyle("DANGER").setEmoji("🛑"));
+                let resumeId = Math.random() + "";
+                let resume = new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(resumeId)
+                        .setLabel("Re-subscribe").setStyle("SUCCESS").setEmoji("✅"));
 
-                sendDM(profile.id, message);
+                sendDM(profile.id, { content: message, components: [stop] }).then(msg => {
+                    const stopFilter = (i: MessageComponentInteraction) => i.customId == stopId || i.customId == resumeId && i.user.id === profile.id;
+                    let collector = msg?.channel.createMessageComponentCollector({ filter: stopFilter });
+                    collector?.on("collect", async click => {
+                        if (click.customId == stopId) {
+                            profile.options = profile.options.filter(p => p.guild != option.guild || p.server != option.server || p.type != option.type || p.value != option.value);
+                            profile.save();
+                            if (click.message.content.startsWith("You will"))
+                                await click.update({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
+                            else
+                                await click.reply({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
+
+                        } else if (click.customId == resumeId) {
+                            profile.options.push(option);
+                            profile.save();
+
+                            await click.update({ content: "You will now be notified " + option.getDescription(), components: [stop] });
+                        }
+                    });
+                });
             }
         }
     }

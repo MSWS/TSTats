@@ -1,4 +1,4 @@
-import { Channel, Message, MessageEmbed, MessagePayload, TextChannel } from "discord.js";
+import { Channel, Message, MessageEmbed, MessageOptions, MessagePayload, TextChannel } from "discord.js";
 import { client } from ".";
 import { ServerData } from "./ServerData";
 
@@ -55,14 +55,9 @@ export function getTextChannel(id: string): TextChannel | undefined {
     return chan as TextChannel;
 }
 
-export function sendDM(id: string, msg: any) {
-    client.users.fetch(id).then(user => {
-        if (!user) {
-            console.error("Unable to fetch user from " + id);
-            return;
-        }
-        user.createDM().then(channel => {
-            channel.send(msg);
-        }).catch(e => console.error(e));
-    }).catch(e => console.error(e));
+export async function sendDM(id: string, msg: string | MessagePayload | MessageOptions): Promise<Message | undefined> {
+    let user = client.users.fetch(id);
+    let channel = (await user).createDM();
+    let message = await (await channel).send(msg);
+    return message;
 }

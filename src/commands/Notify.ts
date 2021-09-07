@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { getClientProfile, getData } from "..";
+import { client, getClientProfile, getData } from "..";
 import { ClientOption, ClientProfile, getSummary, NotifyType } from "../ClientProfile";
 
 module.exports = {
@@ -88,18 +88,46 @@ module.exports = {
 
         profile.options.push(opt);
         profile.save();
-        await interaction.reply({ content: opt.getDescription("You will now be notified "), ephemeral: true });
+        await interaction.reply({ content: "You will now be notified " + opt.getDescription(), ephemeral: true });
     },
 };
 
 function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?: NotifyType): MessageEmbed[] {
     let result = [];
-    let options = profile.options.filter(opt => opt.guild == guild && (opt.server == server || !server) && (opt.type == type || !type));
+    let options = profile.options.filter(opt => (opt.guild == guild || !guild) && (opt.server == server || !server) && (opt.type == type || !type));
+    let map = new Map<string, MessageEmbed>();
+    let descriptions = new Map<string, string[]>();
     for (let option of options) {
-        let embed = new MessageEmbed();
-        embed.setTitle(getSummary(option.type));
-        embed.setDescription(option.getDescription("Currently notifying you "));
+        let embed = map.get(option.guild + option.server);
+        if (!embed) {
+            embed = new MessageEmbed();
+            map.set(option.guild + option.server, embed);
+            if (!guild || option.guild != guild) {
+                let guild = client.guilds.cache.get(option.guild)?.name;
+                embed.setFooter("From " + (guild ? guild : option.guild));
+            }
+            embed.setTitle(option.server);
+        }
+
+        let desc = descriptions.get(option.guild + option.server);
+        if (!desc)
+            desc = [];
+        let index = desc.indexOf("**" + getSummary(option.type) + "**");
+        if (index == -1) {
+            desc.push("");
+            desc.push("**" + getSummary(option.type) + "**");
+            index = desc.length;
+        }
+
+        desc.splice(index + 1, 0, "Notifying you " + option.getDescription());
+        descriptions.set(option.guild + option.server, desc);
         embed.setColor(option.getColor());
+    }
+    for (let [id, description] of descriptions.entries()) {
+        let embed = map.get(id);
+        if (!embed)
+            continue;
+        embed.setDescription(description.join("\n"));
         result.push(embed);
     }
     return result;

@@ -53,7 +53,7 @@ export class ClientOption {
         this.value = data.value;
     }
 
-    getDescription(prefix: string): string {
+    getDescription(): string {
         let str;
         switch (this.type) {
             case NotifyType.MAP:
@@ -71,7 +71,7 @@ export class ClientOption {
             default:
                 return "Unknown notification setting.";
         }
-        return prefix + str + ".";
+        return str + ".";
     }
 
     getColor(): ColorResolvable {
