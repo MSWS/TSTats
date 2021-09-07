@@ -9,24 +9,24 @@ module.exports = {
         .setDefaultPermission(true),
     async execute(interaction: CommandInteraction) {
         if (interaction.inGuild() || interaction.guildId) {
-            await interaction.reply({ content: "This command may only be used in DMs.", ephemeral: true });
+            interaction.reply({ content: "This command may only be used in DMs.", ephemeral: true });
             return;
         }
         await interaction.deferReply({ ephemeral: true });
         const channel = await client.channels.fetch(interaction.channelId);
         const text = channel as TextBasedChannels;
         const messages = await text.messages.fetch();
-        let deleted = 0;
+        const deleting = [];
         for (const msg of messages.values()) {
             if (!msg.deletable)
                 continue;
-            await msg.delete();
-            deleted++;
+            deleting.push(msg.delete());
         }
-        if (!deleted) {
-            await interaction.editReply("There were no messages to delete.");
+        if (!deleting.length) {
+            interaction.editReply("There were no messages to delete.");
             return;
         }
-        await interaction.editReply("Successfully deleted " + deleted + " message" + (deleted == 1 ? "" : "s") + ".");
+        await Promise.all(deleting);
+        interaction.editReply("Successfully deleted " + deleting.length + " message" + (deleting.length === 1 ? "" : "s") + ".");
     }
 };

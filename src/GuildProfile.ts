@@ -37,6 +37,6 @@ export class GuildProfile {
 
     save(): void {
         const data = JSON.stringify({ id: this.id, servers: this.servers, elevated: this.elevated }, null, 2);
-        fs.writeFile(this.file, data, { flag: "w+" }, e => { if (e) console.error("Failed to save guild profile: ", e) });
+        fs.writeFile(this.file, data, { flag: "w+" }, e => { if (e) console.error("Failed to save guild profile: ", e); });
     }
 }

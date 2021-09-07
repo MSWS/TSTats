@@ -20,7 +20,7 @@ export class EmbedGenerator implements Generator {
     generateMessage(data: ServerData): MessageEmbed {
         const embed = new MessageEmbed();
 
-        embed.setTitle(data.sourceName.length == 0 || !config.useServerName ? data.name : data.sourceName);
+        embed.setTitle(data.sourceName.length === 0 || !config.useServerName ? data.name : data.sourceName);
 
         let len = 0;
         let desc = "";
@@ -63,7 +63,7 @@ export class EmbedGenerator implements Generator {
             footer = footer.substring(0, footer.length - 2);
         }
 
-        embed.setFooter(((footer.length != 0 ? footer + "\n" : "") + (data.connect ? data.connect : data.ip)) + "");
+        embed.setFooter((footer.length !== 0 ? footer + "\n" : "") + (data.connect ? data.connect : data.ip) + "");
         embed.setTimestamp(Date.now());
         return embed;
     }
@@ -72,9 +72,9 @@ export class EmbedGenerator implements Generator {
         if (data.color)
             return data.color;
         const percent = data.getOnline() / data.max;
-        let r = ((percent) * 255);
-        let g = Math.cos((data.map.length) + 1) * 255;
-        let b = Math.sin((data.ping) + 1) * 255;
+        let r = percent * 255;
+        let g = Math.cos(data.map.length + 1) * 255;
+        let b = Math.sin(data.ping + 1) * 255;
         r = Math.min(Math.max(r, 0), 255);
         g = Math.min(Math.max(g, 0), 255);
         b = Math.min(Math.max(b, 0), 255);
@@ -87,7 +87,7 @@ export class EmbedGenerator implements Generator {
 
     compToHex(c: number): string {
         const hex = c.toString(16);
-        return hex.length == 1 ? "0" + hex : hex;
+        return hex.length === 1 ? "0" + hex : hex;
     }
 
 }

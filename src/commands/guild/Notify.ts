@@ -39,7 +39,7 @@ module.exports = {
 
         const server = getData(interaction.guildId, sn);
 
-        if (type == "LIST" || value?.toLowerCase() == "list" || sn.toLowerCase() == "list" || sn.toLowerCase() == "all") {
+        if (type === "LIST" || value?.toLowerCase() === "list" || sn.toLowerCase() === "list" || sn.toLowerCase() === "all") {
             let embeds;
             if (value) {
                 embeds = getEmbed(profile, interaction.guildId, server ? server.name : undefined, type as NotifyType);
@@ -59,19 +59,19 @@ module.exports = {
             return;
         }
 
-        if (type == "CLEAR") {
+        if (type === "CLEAR") {
             if (profile?.options)
-                profile.options = profile?.options.filter(opt => opt.server != server?.name);
-            await interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true })
+                profile.options = profile?.options.filter(opt => opt.server !== server?.name);
+            await interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true });
             profile?.save();
             return;
         }
 
         const opt = new ClientOption({ guild: interaction.guildId, server: server.name, type: type as NotifyType, value: interaction.options.getString("value") });
 
-        if (value == "CLEAR") {
+        if (value === "CLEAR") {
             if (profile.options)
-                profile.options = profile.options.filter(opt => opt.server != server?.name || opt.type != type);
+                profile.options = profile.options.filter(opt => opt.server !== server?.name || opt.type !== type);
             await interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
             profile?.save();
             return;
@@ -81,7 +81,7 @@ module.exports = {
             await interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
             return;
         }
-        if (profile.options.some(e => e.guild == opt.guild && e.server == opt.server && e.type == opt.type && e.value == opt.value)) {
+        if (profile.options.some(e => e.guild === opt.guild && e.server === opt.server && e.type === opt.type && e.value === opt.value)) {
             await interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
             return;
         }
@@ -94,7 +94,7 @@ module.exports = {
 
 function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?: NotifyType): MessageEmbed[] {
     const result = [];
-    const options = profile.options.filter(opt => (opt.guild == guild || !guild) && (opt.server == server || !server) && (opt.type == type || !type));
+    const options = profile.options.filter(opt => (opt.guild === guild || !guild) && (opt.server === server || !server) && (opt.type === type || !type));
     const map = new Map<string, MessageEmbed>();
     const descriptions = new Map<string, string[]>();
     for (const option of options) {
@@ -102,7 +102,7 @@ function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?
         if (!embed) {
             embed = new MessageEmbed();
             map.set(option.guild + option.server, embed);
-            if (!guild || option.guild != guild) {
+            if (!guild || option.guild !== guild) {
                 const guild = client.guilds.cache.get(option.guild)?.name;
                 embed.setFooter("From " + (guild ? guild : option.guild));
             }
@@ -113,7 +113,7 @@ function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?
         if (!desc)
             desc = [];
         let index = desc.indexOf("**" + getSummary(option.type) + "**");
-        if (index == -1) {
+        if (index === -1) {
             desc.push("");
             desc.push("**" + getSummary(option.type) + "**");
             index = desc.length;

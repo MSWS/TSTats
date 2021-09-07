@@ -30,7 +30,7 @@ export class Messenger {
     }
 
     remove(data: ServerData): void {
-        this.data = this.data.filter(d => d.name != data.name);
+        this.data = this.data.filter(d => d.name !== data.name);
         deleteMessage(data);
     }
 
@@ -39,7 +39,7 @@ export class Messenger {
      * @param channel 
      */
     async purge(channel: string): Promise<void> {
-        getTextChannel(channel)?.bulkDelete(50).catch(error => { if (error) console.error('Failed to delete the message:', error) });
+        getTextChannel(channel)?.bulkDelete(50).catch(error => { if (error) console.error('Failed to delete the message:', error); });
     }
 
     /**
@@ -67,7 +67,7 @@ export class Messenger {
      */
     public getServerData(data: ServerData): ServerData | null {
         for (const server of this.data) {
-            if (server.name == data.name)
+            if (server.name === data.name)
                 return server;
         }
         return null;
@@ -108,8 +108,8 @@ export class Messenger {
      * @param channel Channel to update
      */
     updateTopic(channel: string): void {
-        const servers = this.data.filter(s => s.channel == channel);
-        if (servers == undefined) {
+        const servers = this.data.filter(s => s.channel === channel);
+        if (servers === undefined) {
             console.warn("Attempted to set %s's topic but there are no servers linked to it", channel);
             return;
         }
@@ -119,6 +119,6 @@ export class Messenger {
             max += server.max;
         }
 
-        getTextChannel(channel)?.setTopic(players + "/" + max + " (" + Math.round(players / max * 1000) / 10 + "%) players across " + servers.length + " server" + (servers.length == 1 ? "" : "s"));
+        getTextChannel(channel)?.setTopic(players + "/" + max + " (" + Math.round(players / max * 1000) / 10 + "%) players across " + servers.length + " server" + (servers.length === 1 ? "" : "s"));
     }
 }

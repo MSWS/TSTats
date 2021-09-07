@@ -25,7 +25,7 @@ module.exports = {
             return;
         }
         const profile = getGuildProfile(interaction.guildId);
-        profile.servers = profile.servers.filter((data: ServerData) => data.name != server?.name);
+        profile.servers = profile.servers.filter((data: ServerData) => data.name !== server?.name);
         profile.save();
         const embed = new MessageEmbed();
 

@@ -23,7 +23,7 @@ export class ServerData {
         this.ip = data.ip;
         this.guild = data.guild;
         this.channel = data.channel;
-        if (data.type != undefined)
+        if (data.type !== undefined)
             this.type = data.type;
         if (data.color)
             this.color = data.color;
@@ -41,7 +41,7 @@ export class ServerData {
      * @param data 
      */
     public update(data: ServerData): void {
-        if (this.sourceName.length == 0 && data.sourceName.length != 0)
+        if (this.sourceName.length === 0 && data.sourceName.length !== 0)
             this.sourceName = data.sourceName;
         this.map = data.map;
         this.max = data.max;
@@ -80,7 +80,8 @@ export class ServerData {
         if (!this.raw)
             return this.players.length;
         try {
-            return (this.raw as { vanilla: { raw: { players: { online: number } } } }).vanilla.raw.players.online;
+            const data = this.raw as { vanilla: { raw: { players: { online: number } } } };
+            return data.vanilla.raw.players.online;
         } catch (error) {
             return this.players.length;
         }

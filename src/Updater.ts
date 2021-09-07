@@ -17,11 +17,11 @@ export class Updater {
 
     public constructor(data: ServerData) {
         const args = data.ip.split(":");
-        if (args.length != 2) {
+        if (args.length !== 2) {
             console.warn("No port defined for %s.", data.name);
         }
         this.ip = args[0];
-        this.port = args.length != 2 ? undefined : parseInt(args[1]);
+        this.port = args.length !== 2 ? undefined : parseInt(args[1]);
         this.data = new ServerData(data);
     }
 
@@ -38,11 +38,11 @@ export class Updater {
                 port: this.port,
                 maxAttempts: 3
             }).then((state: { name: string, map: string, maxplayers: string, connect: string, raw: unknown, players: Array<{ name: string, ping: number }>, ping: number }) => {
-                if (this.data.ping == -1 && this.everOnline)
+                if (this.data.ping === -1 && this.everOnline)
                     this.notifs.set(NotifyType.STATUS, true);
 
                 this.data.sourceName = state.name;
-                if (this.data.map != state.map && this.everOnline)
+                if (this.data.map !== state.map && this.everOnline)
                     this.notifs.set(NotifyType.MAP, state.map);
 
                 this.data.map = state.map;
@@ -51,7 +51,7 @@ export class Updater {
                 this.data.raw = state.raw;
                 const players: string[] = [];
                 for (const p of state.players) {
-                    if (p.name.length == 0)
+                    if (p.name.length === 0)
                         continue;
                     players.push(p.name);
                 }
@@ -84,7 +84,7 @@ export class Updater {
                 this.notify();
                 this.notifs.clear();
             }).catch(() => {
-                if (this.data.ping != -1 && this.everOnline)
+                if (this.data.ping !== -1 && this.everOnline)
                     this.notifs.set(NotifyType.STATUS, false);
                 this.data.players = [];
                 this.data.map = "Offline";
@@ -101,7 +101,7 @@ export class Updater {
 
     notify(): void {
         for (const profile of clientProfiles.values()) {
-            for (const option of profile.options.filter(o => o.guild == this.data.guild && o.server == this.data.name && this.notifs.has(o.type))) {
+            for (const option of profile.options.filter(o => o.guild === this.data.guild && o.server === this.data.name && this.notifs.has(o.type))) {
                 const value = this.notifs.get(option.type);
                 let message = "";
                 switch (option.type) {
@@ -117,11 +117,14 @@ export class Updater {
                         for (const player of value as Array<{ name: string, online: boolean }>) {
                             if (!this.matches(option.value, player.name))
                                 break;
-                            message = "`" + player.name + "` " + (player.online ? "joined" : "left") + " **" + this.data.name + "**."
+                            message = "`" + player.name + "` " + (player.online ? "joined" : "left") + " **" + this.data.name + "**.";
                         }
                         break;
                     case NotifyType.STATUS:
                         message = "`" + this.data.name + "` is now **" + (value ? "Online" : "Offline") + "**.";
+                        break;
+                    default:
+                        message = "You seem to have a broken notification setup.";
                         break;
                 }
                 if (!message)
@@ -136,11 +139,11 @@ export class Updater {
                         .setLabel("Re-subscribe").setStyle("SUCCESS").setEmoji("✅"));
 
                 sendDM(profile.id, { content: message, components: [stop] }).then(msg => {
-                    const stopFilter = (i: MessageComponentInteraction) => i.customId == stopId || i.customId == resumeId && i.user.id === profile.id;
+                    const stopFilter = (i: MessageComponentInteraction) => i.customId === stopId || i.customId === resumeId && i.user.id === profile.id;
                     const collector = msg?.channel.createMessageComponentCollector({ filter: stopFilter });
                     collector?.on("collect", async click => {
-                        if (click.customId == stopId) {
-                            profile.options = profile.options.filter(p => p.guild != option.guild || p.server != option.server || p.type != option.type || p.value != option.value);
+                        if (click.customId === stopId) {
+                            profile.options = profile.options.filter(p => p.guild !== option.guild || p.server !== option.server || p.type !== option.type || p.value !== option.value);
                             profile.save();
                             if (click.message.content.startsWith("You will"))
                                 await click.update({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
@@ -149,7 +152,7 @@ export class Updater {
                                 await click.update({ components: [new MessageActionRow().addComponents(used)] });
                                 await click.followUp({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
                             }
-                        } else if (click.customId == resumeId) {
+                        } else if (click.customId === resumeId) {
                             profile.options.push(option);
                             profile.save();
 
@@ -178,7 +181,7 @@ export class Updater {
         } catch (error) {
             console.error(error);
         }
-        return (reg && reg.test(value)) || value.includes(query);
+        return reg && reg.test(value) || value.includes(query);
     }
 
     stop(): void {

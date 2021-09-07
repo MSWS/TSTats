@@ -31,7 +31,7 @@ module.exports = {
             await interaction.reply({ content: "<@&" + role.id + "> does not have access to elevated commands.", ephemeral: true });
             return;
         }
-        profile.elevated = profile.elevated.filter(id => id != role?.id);
+        profile.elevated = profile.elevated.filter(id => id !== role?.id);
         profile.save();
         registerCommands();
         await interaction.reply("Successfully revoked <@&" + role.id + ">'s access to elevated commands.");

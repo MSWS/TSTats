@@ -25,7 +25,7 @@ module.exports = {
             if (!globalPopular || !globalUnpopular) {
                 globalPopular = s;
                 globalUnpopular = s;
-                if (s.guild == interaction.guildId) {
+                if (s.guild === interaction.guildId) {
                     guildPopular = s;
                     guildUnpopular = s;
                 }
@@ -33,12 +33,12 @@ module.exports = {
             }
             if (s.getOnline() > globalPopular.getOnline()) {
                 globalPopular = s;
-                if (s.guild == interaction.guildId)
+                if (s.guild === interaction.guildId)
                     guildPopular = s;
             }
             if (s.getOnline() < globalUnpopular.getOnline()) {
                 globalUnpopular = s;
-                if (s.guild == interaction.guildId)
+                if (s.guild === interaction.guildId)
                     guildUnpopular = s;
             }
         }
@@ -57,13 +57,13 @@ module.exports = {
 
         embed.setTitle("Global Statistics");
         embed.setColor("BLUE");
-        embed.addField("Players", globalPlayers + "/" + globalMax + " (" + (Math.round(globalPlayers / globalMax * 1000) / 10) + "%)", true);
+        embed.addField("Players", globalPlayers + "/" + globalMax + " (" + Math.round(globalPlayers / globalMax * 1000) / 10 + "%)", true);
         embed.addField("Servers", servers.length + "", true);
         embed.addField("Guilds", client.guilds.cache.size + "", true);
 
-        if (globalUnpopular != globalPopular && globalUnpopular && globalPopular) {
-            embed.addField("Most Popular", globalPopular.name + " from " + globalPopularGuild + " (" + (Math.round(globalPopular.getOnline() / globalPlayers * 1000) / 10) + "%)");
-            embed.addField("Least Popular", globalUnpopular.name + " from " + globalUnpopularGuild + " (" + (Math.round(globalUnpopular.getOnline() / globalPlayers * 1000) / 10) + "%)");
+        if (globalUnpopular !== globalPopular && globalUnpopular && globalPopular) {
+            embed.addField("Most Popular", globalPopular.name + " from " + globalPopularGuild + " (" + Math.round(globalPopular.getOnline() / globalPlayers * 1000) / 10 + "%)");
+            embed.addField("Least Popular", globalUnpopular.name + " from " + globalUnpopularGuild + " (" + Math.round(globalUnpopular.getOnline() / globalPlayers * 1000) / 10 + "%)");
         }
 
         embed.addField("Uptime", date.toISOString().substring(11, 19), true);
@@ -75,12 +75,12 @@ module.exports = {
             embed = new MessageEmbed();
             embed.setTitle(interaction.guild?.name + " Statistics");
             embed.setColor("GREEN");
-            embed.addField("Players", guildPlayers + "/" + guildMax + " (" + (Math.round(guildPlayers / guildMax * 1000) / 10) + "%)", true);
+            embed.addField("Players", guildPlayers + "/" + guildMax + " (" + Math.round(guildPlayers / guildMax * 1000) / 10 + "%)", true);
             embed.addField("Servers", guildServers.length + "", true);
 
-            if (guildUnpopular != guildPopular && guildUnpopular && guildPopular) {
-                embed.addField("Most Popular", globalPopular.name + " (" + (Math.round(guildPopular.getOnline() / guildPlayers * 1000) / 10) + "%)");
-                embed.addField("Least Popular", guildUnpopular.name + " (" + (Math.round(guildUnpopular.getOnline() / guildPlayers * 1000) / 10) + "%)");
+            if (guildUnpopular !== guildPopular && guildUnpopular && guildPopular) {
+                embed.addField("Most Popular", globalPopular.name + " (" + Math.round(guildPopular.getOnline() / guildPlayers * 1000) / 10 + "%)");
+                embed.addField("Least Popular", guildUnpopular.name + " (" + Math.round(guildUnpopular.getOnline() / guildPlayers * 1000) / 10 + "%)");
             }
             embed.setFooter("Requested by " + interaction.user.username);
             await interaction.followUp({ embeds: [embed] });

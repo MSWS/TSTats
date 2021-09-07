@@ -36,20 +36,20 @@ function forceMessage(channel: TextChannel, msg: MessagePayload | MessageEmbed |
 
 export function sendMessageID(id: string, msg: MessagePayload | MessageEmbed | string, data: ServerData): void {
     const chan = getTextChannel(id);
-    if (chan != undefined)
+    if (chan !== undefined)
         sendMessage(chan, msg, data);
 }
 
 export function getChannel(id: string): Channel | undefined {
     const chan = client.channels.cache.get(id);
-    if (chan == null)
+    if (chan === null)
         return undefined;
     return chan;
 }
 
 export function getTextChannel(id: string): TextChannel | undefined {
     const chan = getChannel(id);
-    if (!chan?.isText || chan?.type != "GUILD_TEXT")
+    if (!chan?.isText || chan?.type !== "GUILD_TEXT")
         return undefined;
 
     return chan as TextChannel;

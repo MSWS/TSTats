@@ -1,6 +1,5 @@
 {
     "token": "",
-    "clientId": "",
     "discordRate": 60,
     "sourceRate": 60,
     "discordDelay": 3,
@@ -9,5 +8,5 @@
     "useServerName": true,
     "lineLength": 60,
     "cacheRate": 5,
-    "build": 6
+    "build": 0
 }

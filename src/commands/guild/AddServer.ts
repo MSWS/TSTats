@@ -96,7 +96,7 @@ module.exports = {
 
         const embed = new MessageEmbed();
         embed.setTitle("Success");
-        embed.setDescription("Added " + data.name + " (" + data.ip + ")  to _" + channel.name + "_.")
+        embed.setDescription("Added " + data.name + " (" + data.ip + ")  to _" + channel.name + "_.");
         embed.addField("Game", data.type, true);
         embed.addField("Color", data.color ? data.color : "Dynamic", true);
         if (data.image)

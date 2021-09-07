@@ -82,7 +82,7 @@ export function init(): void {
       client.user?.setPresence({
         status: "online",
         activities: [{
-          name: count + " player" + (count == 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount == 1 ? "" : "s"), type: "WATCHING"
+          name: count + " player" + (count === 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount === 1 ? "" : "s"), type: "WATCHING"
         }]
       });
     }, (config.topicRate ? config.topicRate : 300) * 1000);
@@ -97,10 +97,10 @@ export function init(): void {
       return;
 
     try {
-      await command.execute(interaction);
+      command.execute(interaction);
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch(() => {
+      interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch(() => {
         interaction.followUp({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
       });
     }
@@ -155,7 +155,7 @@ export function getGuildServers(guild: string): ServerData[] {
  */
 export function getPlayerCount(servers?: ServerData[]): number {
   let total = 0;
-  for (const server of (servers ? servers : getServers()))
+  for (const server of servers ? servers : getServers())
     total += server.getOnline();
   return total;
 }
@@ -167,7 +167,7 @@ export function getPlayerCount(servers?: ServerData[]): number {
  */
 export function getMaxPlayerCount(servers?: ServerData[]): number {
   let total = 0;
-  for (const server of (servers ? servers : getServers()))
+  for (const server of servers ? servers : getServers())
     total += server.max;
   return total;
 }
@@ -247,6 +247,9 @@ function loadCommands() {
  */
 export function registerCommands(guildId?: string): void {
   (async () => {
+    const id = client.user?.id;
+    if (!id)
+      throw "No client ID found";
     if (!guildId) {
       // let app = await client.application?.fetch();
       // if (app) {
@@ -270,7 +273,8 @@ export function registerCommands(guildId?: string): void {
         continue;
       cmd[1].delete();
     }
-    rest.put(Routes.applicationGuildCommands(config.clientId, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId); });
+
+    rest.put(Routes.applicationGuildCommands(id, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId) });
   })();
 }
 
@@ -300,13 +304,12 @@ export function updatePermissions(guildId?: string): void {
         id: role[0],
         permission: true,
         type: "ROLE"
-      })
+      });
     }
     const commands = guild.commands.fetch();
     for (const cmd of await commands) {
-      await cmd[1].permissions.set({ permissions: serverPerm });
+      cmd[1].permissions.set({ permissions: serverPerm });
     }
-    return;
   })();
 }
 
@@ -320,13 +323,13 @@ export function updatePermissions(guildId?: string): void {
 export function getData(guild: string, name: string, strict = false): ServerData | undefined {
   const servers = getGuildServers(guild);
   for (const server of servers) {
-    if (server.name == name)
+    if (server.name === name)
       return server;
   }
   if (strict)
     return undefined;
   for (const server of servers) {
-    if (server.name.toLowerCase() == name.toLowerCase())
+    if (server.name.toLowerCase() === name.toLowerCase())
       return server;
   }
   for (const server of servers) {

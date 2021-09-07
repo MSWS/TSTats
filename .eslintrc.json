@@ -14,5 +14,23 @@
     },
     "plugins": [
         "@typescript-eslint"
-    ]
+    ],
+    "rules": {
+        "strict": "error",
+        "semi": [
+            "error",
+            "always",
+            {
+                "omitLastInOneLineBlock": true
+            }
+        ],
+        "no-extra-parens": "warn",
+        "consistent-return": "error",
+        "consistent-this": "error",
+        "default-case": "error",
+        "no-duplicate-case": "error",
+        "camelcase": "warn",
+        "eqeqeq": "warn",
+        "no-await-in-loop": "warn"
+    }
 }

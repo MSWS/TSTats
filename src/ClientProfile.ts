@@ -29,7 +29,7 @@ export class ClientProfile {
 
     save(): void {
         const data = JSON.stringify({ id: this.id, options: this.options }, null, 2);
-        fs.writeFile(this.file, data, { flag: "" }, e => { if (e) console.error("Failed to save client profile: ", e) });
+        fs.writeFile(this.file, data, { flag: "" }, e => { if (e) console.error("Failed to save client profile: ", e); });
     }
 }
 
@@ -99,5 +99,7 @@ export function getSummary(type: NotifyType): string {
             return "Server Status";
         case NotifyType.ADMIN:
             return "No Admins";
+        default:
+            return "Unknown";
     }
 }
