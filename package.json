@@ -2,7 +2,7 @@
   "name": "pt",
   "version": "1.0.0",
   "description": "",
-  "main": "./lib/index.js",
+  "main": "./index.js",
   "scripts": {
     "prebuild": "copyfiles -s -u 1 src/config.json lib/ && tsc && node lib/build.js",
     "build": "tsc",

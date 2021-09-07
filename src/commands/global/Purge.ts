@@ -12,13 +12,21 @@ module.exports = {
             await interaction.reply({ content: "This command may only be used in DMs.", ephemeral: true });
             return;
         }
-
-        let channel = await client.channels.fetch(interaction.channelId) as TextBasedChannels;
-        if (!channel)
-            throw "Unable to fetch channel from " + interaction.channelId;
-
-        let messages = channel.awaitMessages({ filter: msg => msg.author.id == client.user?.id });
-        (await messages).forEach(m => m.delete());
-        await interaction.reply({ content: "Purged messages.", ephemeral: true });
+        await interaction.deferReply({ ephemeral: true });
+        let channel = await client.channels.fetch(interaction.channelId);
+        let text = channel as TextBasedChannels;
+        let messages = await text.messages.fetch();
+        let deleted = 0;
+        for (let msg of messages.values()) {
+            if (!msg.deletable)
+                continue;
+            await msg.delete();
+            deleted++;
+        }
+        if (!deleted) {
+            await interaction.editReply("There were no messages to delete.");
+            return;
+        }
+        await interaction.editReply("Successfully deleted " + deleted + " message" + (deleted == 1 ? "" : "s") + ".");
     }
 };

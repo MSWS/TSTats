@@ -23,7 +23,7 @@ const globalCommands: any[] = [];
 export let config = require(path.resolve(__dirname, "./config.json"));
 export let generator = new EmbedGenerator();
 export let client: Client;
-export let version = "1.0.0";
+export let version = "0.0.1";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
