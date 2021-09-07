@@ -2,9 +2,9 @@ import { Channel, Message, MessageEmbed, MessageOptions, MessagePayload, TextCha
 import { client } from ".";
 import { ServerData } from "./ServerData";
 
-let messages = new Map<string, Message>();
+const messages = new Map<string, Message>();
 
-export function sendMessage(channel: TextChannel, msg: any, data: ServerData) {
+export function sendMessage(channel: TextChannel, msg: string | MessageEmbed | MessagePayload, data: ServerData): void {
     if (messages.has(data.name)) {
         messages.get(data.name)?.fetch().then(m => {
             if (msg instanceof MessagePayload) {
@@ -20,13 +20,13 @@ export function sendMessage(channel: TextChannel, msg: any, data: ServerData) {
     forceMessage(channel, msg, data);
 }
 
-export function deleteMessage(data: ServerData) {
+export function deleteMessage(data: ServerData): void {
     if (!messages.has(data.name))
         return;
     messages.get(data.name)?.fetch().then(m => m.delete());
 }
 
-function forceMessage(channel: TextChannel, msg: any, data: ServerData) {
+function forceMessage(channel: TextChannel, msg: MessagePayload | MessageEmbed | string, data: ServerData): void {
     if (msg instanceof MessagePayload) {
         channel.send(msg).then(msg => messages.set(data.name, msg));
     } else if (msg instanceof MessageEmbed) {
@@ -34,21 +34,21 @@ function forceMessage(channel: TextChannel, msg: any, data: ServerData) {
     }
 }
 
-export function sendMessageID(id: string, msg: any, data: ServerData) {
-    let chan = getTextChannel(id);
+export function sendMessageID(id: string, msg: MessagePayload | MessageEmbed | string, data: ServerData): void {
+    const chan = getTextChannel(id);
     if (chan != undefined)
         sendMessage(chan, msg, data);
 }
 
 export function getChannel(id: string): Channel | undefined {
-    let chan = client.channels.cache.get(id);
+    const chan = client.channels.cache.get(id);
     if (chan == null)
         return undefined;
     return chan;
 }
 
 export function getTextChannel(id: string): TextChannel | undefined {
-    let chan = getChannel(id);
+    const chan = getChannel(id);
     if (!chan?.isText || chan?.type != "GUILD_TEXT")
         return undefined;
 
@@ -56,8 +56,8 @@ export function getTextChannel(id: string): TextChannel | undefined {
 }
 
 export async function sendDM(id: string, msg: string | MessagePayload | MessageOptions): Promise<Message | undefined> {
-    let user = client.users.fetch(id);
-    let channel = (await user).createDM();
-    let message = await (await channel).send(msg);
+    const user = client.users.fetch(id);
+    const channel = (await user).createDM();
+    const message = await (await channel).send(msg);
     return message;
 }

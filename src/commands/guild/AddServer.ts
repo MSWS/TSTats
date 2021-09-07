@@ -58,7 +58,7 @@ module.exports = {
             await interaction.reply({ content: "You require the `MANAGE_CHANNELS` permission for <#" + channel.id + ">.", ephemeral: true });
             return;
         }
-        let name = interaction.options.getString("name");
+        const name = interaction.options.getString("name");
 
         if (!name) {
             await interaction.reply({ content: "You must specify a server name.", ephemeral: true });
@@ -69,15 +69,15 @@ module.exports = {
             return;
         }
 
-        let ip = interaction.options.getString("ip");
-        let image: any = interaction.options.getString("image");
-        let type = interaction.options.getString("type");
+        const ip = interaction.options.getString("ip");
+        let image: string | null | undefined = interaction.options.getString("image");
+        const type = interaction.options.getString("type");
         if (!image)
             image = undefined;
         if (!ip)
             return;
 
-        let data = new ServerData({
+        const data = new ServerData({
             guild: interaction.guildId,
             name: name,
             ip: ip,
@@ -86,15 +86,15 @@ module.exports = {
             type: type ? type : undefined
         });
 
-        let update = new Updater(data);
+        const update = new Updater(data);
         update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
         addUpdater(data.guild, data.channel, update);
         getMessenger(interaction.guildId).add(data);
-        let profile = getGuildProfile(interaction.guildId);
+        const profile = getGuildProfile(interaction.guildId);
         profile.servers.push(data);
         profile.save();
 
-        let embed = new MessageEmbed();
+        const embed = new MessageEmbed();
         embed.setTitle("Success");
         embed.setDescription("Added " + data.name + " (" + data.ip + ")  to _" + channel.name + "_.")
         embed.addField("Game", data.type, true);

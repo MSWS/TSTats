@@ -1,7 +1,7 @@
 import { ColorResolvable } from "discord.js";
 
-const fs = require('fs');
-const path = require("path");
+import fs = require('fs');
+import path = require("path");
 
 /**
  * Represents a client's notification preferences
@@ -17,20 +17,19 @@ export class ClientProfile {
         this.options = [];
     }
 
-    load() {
-        let data = require(this.file);
-        let opts = data["options"];
-        if (opts)
-            for (let o of opts)
-                this.options.push(new ClientOption(o));
+    load(): void {
+        import(this.file).then(dat => {
+            const opts = dat["options"];
+            if (opts)
+                for (const o of opts)
+                    this.options.push(new ClientOption(o));
+        });
+
     }
 
-    save() {
-        let data = JSON.stringify({ id: this.id, options: this.options }, null, 2);
-        fs.writeFile(this.file, data, { flag: "w+" }, (e: Error) => {
-            if (e)
-                console.error(e);
-        });
+    save(): void {
+        const data = JSON.stringify({ id: this.id, options: this.options }, null, 2);
+        fs.writeFile(this.file, data, { flag: "" }, e => { if (e) console.error("Failed to save client profile: ", e) });
     }
 }
 
@@ -60,7 +59,7 @@ export class ClientOption {
                 str = "when the map changes" + (this.value ? " to " + this.value : "") + " on " + this.server;
                 break;
             case NotifyType.PLAYER:
-                str = "when " + (this.value ? this.value : "any player") + " joins on " + this.server;
+                str = "when " + (this.value ? this.value : "any player") + " joins " + this.server;
                 break;
             case NotifyType.STATUS:
                 str = "when " + this.server + " goes offline/online";

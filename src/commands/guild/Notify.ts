@@ -12,7 +12,7 @@ module.exports = {
         ]).setRequired(true))
         .addStringOption(o => o.setName("value").setDescription("The name of the map / player to notify")),
     async execute(interaction: CommandInteraction) {
-        let sn = interaction.options.getString("server");
+        const sn = interaction.options.getString("server");
         if (!sn) {
             await interaction.reply({ content: "Invalid server.", ephemeral: true });
             return;
@@ -22,22 +22,22 @@ module.exports = {
             return;
         }
 
-        let type = interaction.options.getString("type");
+        const type = interaction.options.getString("type");
         if (!type) {
             await interaction.reply({ content: "Unknown type.", ephemeral: true });
             return;
         }
 
-        let id = interaction.user.id;
-        let profile = getClientProfile(id);
-        let value = interaction.options.getString("value");
+        const id = interaction.user.id;
+        const profile = getClientProfile(id);
+        const value = interaction.options.getString("value");
 
         if (!profile) {
             await interaction.reply({ content: "Unable to fetch profile.", ephemeral: true });
             return;
         }
 
-        let server = getData(interaction.guildId, sn);
+        const server = getData(interaction.guildId, sn);
 
         if (type == "LIST" || value?.toLowerCase() == "list" || sn.toLowerCase() == "list" || sn.toLowerCase() == "all") {
             let embeds;
@@ -67,7 +67,7 @@ module.exports = {
             return;
         }
 
-        let opt = new ClientOption({ guild: interaction.guildId, server: server.name, type: type as NotifyType, value: interaction.options.getString("value") });
+        const opt = new ClientOption({ guild: interaction.guildId, server: server.name, type: type as NotifyType, value: interaction.options.getString("value") });
 
         if (value == "CLEAR") {
             if (profile.options)
@@ -93,17 +93,17 @@ module.exports = {
 };
 
 function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?: NotifyType): MessageEmbed[] {
-    let result = [];
-    let options = profile.options.filter(opt => (opt.guild == guild || !guild) && (opt.server == server || !server) && (opt.type == type || !type));
-    let map = new Map<string, MessageEmbed>();
-    let descriptions = new Map<string, string[]>();
-    for (let option of options) {
+    const result = [];
+    const options = profile.options.filter(opt => (opt.guild == guild || !guild) && (opt.server == server || !server) && (opt.type == type || !type));
+    const map = new Map<string, MessageEmbed>();
+    const descriptions = new Map<string, string[]>();
+    for (const option of options) {
         let embed = map.get(option.guild + option.server);
         if (!embed) {
             embed = new MessageEmbed();
             map.set(option.guild + option.server, embed);
             if (!guild || option.guild != guild) {
-                let guild = client.guilds.cache.get(option.guild)?.name;
+                const guild = client.guilds.cache.get(option.guild)?.name;
                 embed.setFooter("From " + (guild ? guild : option.guild));
             }
             embed.setTitle(option.server);
@@ -123,8 +123,8 @@ function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?
         descriptions.set(option.guild + option.server, desc);
         embed.setColor(option.getColor());
     }
-    for (let [id, description] of descriptions.entries()) {
-        let embed = map.get(id);
+    for (const [id, description] of descriptions.entries()) {
+        const embed = map.get(id);
         if (!embed)
             continue;
         embed.setDescription(description.join("\n"));

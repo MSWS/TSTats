@@ -17,15 +17,15 @@ module.exports = {
             return;
         }
         if (!interaction.guild?.channels.cache.get(interaction.channel.id)?.permissionsFor(interaction.user)?.has("MANAGE_GUILD")) {
-            await interaction.reply({ content: "You require the `MANAGER_GUILD` permission to use this command.", ephemeral: true });
+            await interaction.reply({ content: "You require the `MANAGE_GUILD` permission to use this command.", ephemeral: true });
             return;
         }
-        let role = interaction.options.getRole("role");
+        const role = interaction.options.getRole("role");
         if (!role) {
             await interaction.reply({ content: "Unknown role.", ephemeral: true });
             return;
         }
-        let profile = getGuildProfile(interaction.guildId);
+        const profile = getGuildProfile(interaction.guildId);
         if (profile.elevated.includes(role.id)) {
             await interaction.reply({ content: "<@&" + role.id + "> already has access to elevated commands.", ephemeral: true });
             return;

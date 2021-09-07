@@ -1,17 +1,15 @@
-const path = require("path");
-const fs = require('fs');
+import path = require("path");
+import fs = require('fs');
 
-let dir = path.resolve(__dirname, "config.json");
-const config = require(dir);
+const dir = path.resolve(__dirname, "config.json");
 
-let build = config["build"];
-if (!build)
-    build = 0;
-build++;
+import(dir).then(config => {
+    let build = config["build"];
+    if (!build)
+        build = 0;
+    build++;
 
-config["build"] = build;
+    config["build"] = build;
 
-fs.writeFile(dir, JSON.stringify(config, null, 2), { flag: "w+" }, (e: Error) => {
-    if (e)
-        console.error(e);
+    fs.writeFile(dir, JSON.stringify(config, null, 2), { flag: "w+" }, (e) => { if (e) console.error("Failed to save config: ", e) });
 });

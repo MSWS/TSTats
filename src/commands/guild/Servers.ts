@@ -11,7 +11,7 @@ module.exports = {
             await interaction.reply({ content: "There are no servers in here.", ephemeral: true });
             return;
         }
-        for (let server of getGuildServers(interaction.guildId)) {
+        for (const server of getGuildServers(interaction.guildId)) {
             if (interaction.guild?.channels.cache.get(server.channel))
                 msg += server.name + ", ";
         }

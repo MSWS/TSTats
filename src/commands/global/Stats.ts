@@ -9,19 +9,19 @@ module.exports = {
         .setDescription("Retreives the bot's stats")
         .setDefaultPermission(true),
     async execute(interaction: CommandInteraction) {
-        let globalPlayers = getPlayerCount(), globalMax = getMaxPlayerCount();
+        const globalPlayers = getPlayerCount(), globalMax = getMaxPlayerCount();
         let guildServers, guildPlayers, guildMax;
         if (interaction.inGuild() && interaction.guildId) {
             guildServers = getGuildServers(interaction.guildId);
             guildPlayers = getPlayerCount(guildServers);
             guildMax = getMaxPlayerCount(guildServers);
         }
-        let servers = getServers();
-        let uptime = Date.now() - start;
+        const servers = getServers();
+        const uptime = Date.now() - start;
 
         let globalPopular: ServerData | undefined, globalUnpopular: ServerData | undefined;
         let guildPopular: ServerData | undefined, guildUnpopular: ServerData | undefined;
-        for (let s of servers) {
+        for (const s of servers) {
             if (!globalPopular || !globalUnpopular) {
                 globalPopular = s;
                 globalUnpopular = s;
@@ -49,10 +49,10 @@ module.exports = {
             return;
         }
 
-        let globalPopularGuild = client.guilds.cache.get(globalPopular.guild)?.name, globalUnpopularGuild = client.guilds.cache.get(globalUnpopular?.guild)?.name;
+        const globalPopularGuild = client.guilds.cache.get(globalPopular.guild)?.name, globalUnpopularGuild = client.guilds.cache.get(globalUnpopular?.guild)?.name;
 
         let embed = new MessageEmbed();
-        let date = new Date(0);
+        const date = new Date(0);
         date.setSeconds(uptime / 1000);
 
         embed.setTitle("Global Statistics");

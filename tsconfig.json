@@ -23,7 +23,7 @@
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true,
 		"downlevelIteration": true,
-		"declaration": false,
+		"declaration": true,
 		"pretty": true
 	},
 	"include": [

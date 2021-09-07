@@ -20,6 +20,8 @@ build:
         - npm install gamedig --save-dev
         - npm install typescript --save-dev
         - npm init --yes
-        - npm run prebuild
+        - npm run build
+        - npm run copyconfig
+        - npm run lint
     tags:
         - docker

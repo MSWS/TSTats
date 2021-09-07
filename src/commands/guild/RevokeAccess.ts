@@ -16,17 +16,17 @@ module.exports = {
             await interaction.reply({ content: "Unable to fetch channel, please try again later.", ephemeral: true });
             return;
         }
-        if (!interaction.guild?.channels.cache.get(interaction.channel.id)?.permissionsFor(interaction.user)?.has("ADMINISTRATOR")) {
-            await interaction.reply({ content: "You require the `ADMINISTRATOR` permission to use this command.", ephemeral: true });
+        if (!interaction.guild?.channels.cache.get(interaction.channel.id)?.permissionsFor(interaction.user)?.has("MANAGE_GUILD")) {
+            await interaction.reply({ content: "You require the `MANAGE_GUILD` permission to use this command.", ephemeral: true });
             return;
         }
 
-        let role = interaction.options.getRole("role");
+        const role = interaction.options.getRole("role");
         if (!role) {
             await interaction.reply({ content: "Unknown role.", ephemeral: true });
             return;
         }
-        let profile = getGuildProfile(interaction.guildId);
+        const profile = getGuildProfile(interaction.guildId);
         if (!profile.elevated.includes(role.id)) {
             await interaction.reply({ content: "<@&" + role.id + "> does not have access to elevated commands.", ephemeral: true });
             return;

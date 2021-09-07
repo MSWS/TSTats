@@ -10,7 +10,7 @@ module.exports = {
         .addStringOption((option: SlashCommandStringOption) => option.setName("name").setDescription("The name of the server to delete").setRequired(true))
         .setDefaultPermission(false),
     async execute(interaction: CommandInteraction) {
-        let name = interaction.options.getString("name");
+        const name = interaction.options.getString("name");
         if (!name) {
             await interaction.reply({ content: "You must specify the name of the server.", ephemeral: true });
             return;
@@ -19,19 +19,19 @@ module.exports = {
             await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
             return;
         }
-        let server = getData(interaction.guildId, name);
+        const server = getData(interaction.guildId, name);
         if (!server || !interaction.guild?.channels.cache.get(server.channel)) {
             await interaction.reply({ content: "Unknown server specified.", ephemeral: true });
             return;
         }
-        let profile = getGuildProfile(interaction.guildId);
+        const profile = getGuildProfile(interaction.guildId);
         profile.servers = profile.servers.filter((data: ServerData) => data.name != server?.name);
         profile.save();
-        let embed = new MessageEmbed();
+        const embed = new MessageEmbed();
 
         embed.setTitle("Success");
         embed.setDescription("Deleted " + server.name + " (" + server.ip + ").");
-        let url = interaction.user.avatarURL();
+        const url = interaction.user.avatarURL();
         embed.setFooter("Called by " + interaction.user.username + "#" + interaction.user.discriminator, url ? url : undefined);
 
         getMessenger(interaction.guildId).remove(server);

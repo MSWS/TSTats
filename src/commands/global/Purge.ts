@@ -13,11 +13,11 @@ module.exports = {
             return;
         }
         await interaction.deferReply({ ephemeral: true });
-        let channel = await client.channels.fetch(interaction.channelId);
-        let text = channel as TextBasedChannels;
-        let messages = await text.messages.fetch();
+        const channel = await client.channels.fetch(interaction.channelId);
+        const text = channel as TextBasedChannels;
+        const messages = await text.messages.fetch();
         let deleted = 0;
-        for (let msg of messages.values()) {
+        for (const msg of messages.values()) {
             if (!msg.deletable)
                 continue;
             await msg.delete();

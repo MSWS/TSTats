@@ -1,47 +1,57 @@
-import { ApplicationCommandPermissionData, Client, Intents } from "discord.js";
+import { ApplicationCommandPermissionData, Client, Intents, Interaction } from "discord.js";
 import { ClientProfile } from "./ClientProfile";
 import { EmbedGenerator } from "./Generator";
 import { GuildProfile } from "./GuildProfile";
 import { Messenger } from "./Messenger";
 import { ServerData } from "./ServerData";
 import { Updater } from "./Updater";
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const fs = require('fs');
-const path = require("path");
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
+import fs = require('fs');
+import path = require("path");
 
 // Create the directories before we fetch them
-fs.mkdir(path.resolve(__dirname, "./profiles"), () => { });
-fs.mkdir(path.resolve(__dirname, "./configs"), () => { });
+fs.mkdir(path.resolve(__dirname, "./profiles"), () => console.error("Unable to make profiles directory"));
+fs.mkdir(path.resolve(__dirname, "./configs"), () => console.error("Unable to make configs directory"));
 
 export const clientProfiles = new Map<string, ClientProfile>();
 
-const commands = new Map<string, any>(); // Map for execution
-const guildCommands: any[] = []; // Array for registrating commands
-const globalCommands: any[] = [];
+interface Command {
+  data: { toJSON: () => string, name: string },
+  execute: (interaction: Interaction) => void
+}
 
-export let config = require(path.resolve(__dirname, "./config.json"));
-export let generator = new EmbedGenerator();
+const commands = new Map<string, Command>(); // Map for execution
+const guildCommands: Command[] = []; // Array for registrating commands
+const globalCommands: Command[] = [];
+
+export let config: { token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number, useServerName: boolean, lineLength: number, cacheRate: number, build: number };
+export const generator = new EmbedGenerator();
 export let client: Client;
-export let version = "0.0.1";
+export const version = "0.0.1";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
 
-let rest: any;
+let rest: REST;
 const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
 const updateMap = new Map<string, Updater>();
 
-init();
 
-export function init() {
+console.log("Loading config...");
+
+import(path.resolve(__dirname, "./config.json")).then(c => {
+  config = c;
+  console.log("Config loaded: " + c);
+  init();
+});
+
+export function init(): void {
   client = new Client({
     allowedMentions: { parse: ['users', 'roles'], repliedUser: true },
-    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, /*Intents.FLAGS.DIRECT_MESSAGES*/], /*partials: ["CHANNEL"] */
   });
-  config = require(path.resolve(__dirname, "./config.json"));
-  checkConfig();
 
   rest = new REST({ version: '9' }).setToken(config.token);
 
@@ -49,27 +59,26 @@ export function init() {
   loadClientProfiles();
   loadCommands();
 
-
   client.on("ready", () => {
     registerCommands();
     start = Date.now();
     let serverCount = getServers().length;
 
-    for (let server of getServers()) {
-      let update = new Updater(server);
+    for (const server of getServers()) {
+      const update = new Updater(server);
       update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
       addUpdater(update.data.guild, update.data.name, update);
     }
 
-    for (let [guild, data] of guilds.entries()) {
-      let msg = new Messenger(data);
+    for (const [guild, data] of guilds.entries()) {
+      const msg = new Messenger(data);
       messengerMap.set(guild, msg);
       msg.start(config.discordDelay * 1000, config.discordRate * 1000);
     }
 
     setInterval(() => {
       serverCount = getServers().length;
-      let count = getPlayerCount();
+      const count = getPlayerCount();
       client.user?.setPresence({
         status: "online",
         activities: [{
@@ -82,7 +91,7 @@ export function init() {
   client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
 
-    let command: any = commands.get(interaction.commandName);
+    const command: Command | undefined = commands.get(interaction.commandName);
 
     if (!command)
       return;
@@ -100,10 +109,10 @@ export function init() {
   client.login(config.token);
 }
 
-export function restart() {
-  for (let msg of messengerMap.values())
+export function restart(): void {
+  for (const msg of messengerMap.values())
     msg.stop();
-  for (let update of updateMap.values())
+  for (const update of updateMap.values())
     update.stop();
   updateMap.clear();
   messengerMap.clear();
@@ -118,10 +127,10 @@ export function restart() {
  * @returns Array of servers across all guilds
  */
 export function getServers(): ServerData[] {
-  let result: ServerData[] = [];
+  const result: ServerData[] = [];
 
-  for (let server of guildProfiles.keys()) {
-    for (let s of getGuildServers(server))
+  for (const server of guildProfiles.keys()) {
+    for (const s of getGuildServers(server))
       result.push(s);
   }
   return result;
@@ -133,7 +142,7 @@ export function getServers(): ServerData[] {
  * @returns An array of servers, or empty if none
  */
 export function getGuildServers(guild: string): ServerData[] {
-  let profile = guildProfiles.get(guild);
+  const profile = guildProfiles.get(guild);
   if (!profile)
     return new GuildProfile(guild).servers;
   return profile.servers;
@@ -146,7 +155,7 @@ export function getGuildServers(guild: string): ServerData[] {
  */
 export function getPlayerCount(servers?: ServerData[]): number {
   let total = 0;
-  for (let server of (servers ? servers : getServers()))
+  for (const server of (servers ? servers : getServers()))
     total += server.getOnline();
   return total;
 }
@@ -158,7 +167,7 @@ export function getPlayerCount(servers?: ServerData[]): number {
  */
 export function getMaxPlayerCount(servers?: ServerData[]): number {
   let total = 0;
-  for (let server of (servers ? servers : getServers()))
+  for (const server of (servers ? servers : getServers()))
     total += server.max;
   return total;
 }
@@ -166,11 +175,8 @@ export function getMaxPlayerCount(servers?: ServerData[]): number {
 /**
  * Saves the bot's config.
  */
-export function saveConfig() {
-  fs.writeFile("./config.json", JSON.stringify(config), { flag: "w+" }, (e: Error) => {
-    if (e)
-      console.error(e);
-  });
+export function saveConfig(): void {
+  fs.writeFile("./config.json", JSON.stringify(config), { flag: "w+" }, (e) => { if (e) console.error("Failed to save config: ", e); });
 }
 
 /**
@@ -180,14 +186,14 @@ export function saveConfig() {
  */
 function loadGuildConfigs(): Map<string, ServerData[]> {
   const configFiles = fs.readdirSync(path.resolve(__dirname, "./configs")).filter((file: string) => file.endsWith(".json"));
-  for (let file of configFiles as string) {
-    let id = file.substring(0, file.length - ".json".length);
-    let profile = new GuildProfile(id);
+  for (const file of configFiles) {
+    const id = file.substring(0, file.length - ".json".length);
+    const profile = new GuildProfile(id);
     profile.load();
     guildProfiles.set(id, profile);
   }
-  let result = new Map<string, ServerData[]>();
-  for (let profile of guildProfiles.values()) {
+  const result = new Map<string, ServerData[]>();
+  for (const profile of guildProfiles.values()) {
     result.set(profile.id, profile.servers);
   }
   return result;
@@ -199,9 +205,9 @@ function loadGuildConfigs(): Map<string, ServerData[]> {
 function loadClientProfiles() {
   clientProfiles.clear();
   const profileFile = fs.readdirSync(path.resolve(__dirname, "./profiles")).filter((file: string) => file.endsWith(".json"));
-  for (let file of profileFile as string) {
-    let id = file.substring(0, file.length - ".json".length);
-    let profile = new ClientProfile(id);
+  for (const file of profileFile) {
+    const id = file.substring(0, file.length - ".json".length);
+    const profile = new ClientProfile(id);
     profile.load();
     clientProfiles.set(id, profile);
   }
@@ -218,16 +224,19 @@ function loadCommands() {
   globalCommands.length = 0;
 
   for (const file of guildCommandFiles) {
-    const command = require(`./commands/guild/${file}`);
-    commands.set(command.data.name, command);
-    console.log("Registering guild command %s (data: %s)", command.data.name, command.data);
-    guildCommands.push(command.data.toJSON());
+    import(`./commands/guild/${file}`).then(command => {
+      commands.set(command.data.name, command);
+      console.log("Registering guild command %s (data: %s)", command.data.name, command.data);
+      guildCommands.push(command.data.toJSON());
+    });
+
   }
   for (const file of globalCommandFiles) {
-    const command = require(`./commands/global/${file}`);
-    commands.set(command.data.name, command);
-    console.log("Registering global command %s (data: %s)", command.data.name, command.data);
-    globalCommands.push(command.data.toJSON());
+    import(`./commands/global/${file}`).then(command => {
+      commands.set(command.data.name, command);
+      console.log("Registering global command %s (data: %s)", command.data.name, command.data);
+      globalCommands.push(command.data.toJSON());
+    });
   }
 }
 
@@ -236,7 +245,7 @@ function loadCommands() {
  * Registers commands and updates the permissions via updatePermissions.
  * @param guildId The guild to update commands for, if not specified, updates all guild's commands
  */
-export function registerCommands(guildId?: string) {
+export function registerCommands(guildId?: string): void {
   (async () => {
     if (!guildId) {
       // let app = await client.application?.fetch();
@@ -248,15 +257,15 @@ export function registerCommands(guildId?: string) {
       //     cmd.delete();
       //   }
       // }
-      for (let guild of await client.guilds.fetch()) {
+      for (const guild of await client.guilds.fetch()) {
         registerCommands(guild[0]);
       }
       // rest.put(Routes.applicationCommands(config.clientId), { body: globalCommands });
       return;
     }
-    let guild = client.guilds.fetch(guildId);
-    let gCommands = await (await guild).commands.fetch();
-    for (let cmd of gCommands) {
+    const guild = client.guilds.fetch(guildId);
+    const gCommands = await (await guild).commands.fetch();
+    for (const cmd of gCommands) {
       if (commands.has(cmd[1].name))
         continue;
       cmd[1].delete();
@@ -269,22 +278,22 @@ export function registerCommands(guildId?: string) {
  * Updates the specified guild's command permissions. By default, the highest role has access to all commands. Any role that has access to manage the guild also has access to all commands.
  * @param guildId The guild to update permissions for, if not specified, updates all guild's permissions
  */
-export function updatePermissions(guildId?: string) {
+export function updatePermissions(guildId?: string): void {
   (async () => {
     if (!guildId) {
-      for (let guild of await client.guilds.fetch()) {
+      for (const guild of await client.guilds.fetch()) {
         updatePermissions(guild[0]);
       }
       return;
     }
-    let guild = await client.guilds.fetch(guildId);
-    let serverPerm: ApplicationCommandPermissionData[] = [{
+    const guild = await client.guilds.fetch(guildId);
+    const serverPerm: ApplicationCommandPermissionData[] = [{
       id: guild.roles.highest.id,
       permission: true,
       type: "ROLE"
     }];
-    let roles = await guild.roles.fetch();
-    for (let role of roles) {
+    const roles = await guild.roles.fetch();
+    for (const role of roles) {
       if (!role[1].permissions.has("MANAGE_GUILD") && !getGuildProfile(guild.id).elevated.includes(role[0]))
         continue;
       serverPerm.push({
@@ -293,24 +302,12 @@ export function updatePermissions(guildId?: string) {
         type: "ROLE"
       })
     }
-    let commands = guild.commands.fetch();
-    for (let cmd of await commands) {
+    const commands = guild.commands.fetch();
+    for (const cmd of await commands) {
       await cmd[1].permissions.set({ permissions: serverPerm });
     }
     return;
   })();
-}
-
-function checkConfig(): boolean {
-  let valid = true;
-  for (let field of ["token", "clientId", "discordRate", "sourceRate", "discordDelay", "sourceDelay", "topicRate", "useServerName", "lineLength", "cacheRate"]) {
-    if (config[field] == undefined) {
-      console.warn("config.json does NOT have " + field + " set!");
-      valid = false;
-    }
-  }
-
-  return valid;
 }
 
 /**
@@ -320,19 +317,19 @@ function checkConfig(): boolean {
  * @param strict If true, will find the closest match. If false, will only return exact matches.
  * @returns The ServerData, or undefined if none is found.
  */
-export function getData(guild: string, name: string, strict: boolean = false): ServerData | undefined {
-  let servers = getGuildServers(guild);
-  for (let server of servers) {
+export function getData(guild: string, name: string, strict = false): ServerData | undefined {
+  const servers = getGuildServers(guild);
+  for (const server of servers) {
     if (server.name == name)
       return server;
   }
   if (strict)
     return undefined;
-  for (let server of servers) {
+  for (const server of servers) {
     if (server.name.toLowerCase() == name.toLowerCase())
       return server;
   }
-  for (let server of servers) {
+  for (const server of servers) {
     if (server.name.toLowerCase().includes(name.toLowerCase()))
       return server;
   }
@@ -358,7 +355,7 @@ export function getMessenger(guild: string): Messenger {
  * Adds an updater to track, will be stopped if exited
  * @param updater Updater to add
  */
-export function addUpdater(guild: string, name: string, updater: Updater) {
+export function addUpdater(guild: string, name: string, updater: Updater): void {
   updateMap.set(guild + name, updater);
 }
 
@@ -377,7 +374,7 @@ export function getUpdater(guild: string, name: string): Updater | undefined {
  * @param guild Guild that the updater belongs to
  * @param name Server name the updater belongs to
  */
-export function removeUpdater(guild: string, name: string) {
+export function removeUpdater(guild: string, name: string): void {
   getUpdater(guild, name)?.stop();
   updateMap.delete(guild + name);
 }
@@ -387,7 +384,7 @@ export function removeUpdater(guild: string, name: string) {
  * @param guild Guild whose profile to fetch
  * @returns The guild's profile, or a new one if none exists.
  */
-export function getGuildProfile(guild: string) {
+export function getGuildProfile(guild: string): GuildProfile {
   let profile = guildProfiles.get(guild);
   if (!profile) {
     profile = new GuildProfile(guild);
@@ -401,7 +398,7 @@ export function getGuildProfile(guild: string) {
  * @param client Client whose profile to fetch
  * @returns The client's profile, or a new one if none exists.
  */
-export function getClientProfile(client: string) {
+export function getClientProfile(client: string): ClientProfile {
   let profile = clientProfiles.get(client);
   if (!profile) {
     profile = new ClientProfile(client);

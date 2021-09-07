@@ -1,11 +1,27 @@
 {
-    "extends": "eslint:recommended",
-    "env": {
-        "node": true,
-        "es6": true
-    },
-    "parserOptions": {
-        "ecmaVersion": 2021
-    },
-    "rules": {}
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ]
 }
+// {
+//     "extends": "eslint:recommended",
+//     "env": {
+//         "node": true,
+//         "es6": true
+//     },
+//     "parserOptions": {
+//         "ecmaVersion": 2021
+//     },
+//     "rules": {
+//         "no-unused-expressions": "warn",
+//         "no-unused-labels": "warn",
+//         "no-unused-vars": "warn"
+//     }
+// }

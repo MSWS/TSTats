@@ -16,7 +16,7 @@ export class Updater {
     everOnline = false;
 
     public constructor(data: ServerData) {
-        let args = data.ip.split(":");
+        const args = data.ip.split(":");
         if (args.length != 2) {
             console.warn("No port defined for %s.", data.name);
         }
@@ -25,19 +25,19 @@ export class Updater {
         this.data = new ServerData(data);
     }
 
-    notifs = new Map<NotifyType, any>();
+    notifs = new Map<NotifyType, unknown>();
 
     /**
      * Queries Gamedig and updates the ServerData
      */
-    async update() {
+    async update(): Promise<void> {
         try {
             await this.Gamedig.query({
                 type: this.data.type,
                 host: this.ip,
                 port: this.port,
                 maxAttempts: 3
-            }).then((state: any) => {
+            }).then((state: { name: string, map: string, maxplayers: string, connect: string, raw: unknown, players: Array<{ name: string, ping: number }>, ping: number }) => {
                 if (this.data.ping == -1 && this.everOnline)
                     this.notifs.set(NotifyType.STATUS, true);
 
@@ -49,8 +49,8 @@ export class Updater {
                 this.data.max = parseInt(state.maxplayers);
                 this.data.connect = state.connect;
                 this.data.raw = state.raw;
-                let players: string[] = [];
-                for (let p of state.players) {
+                const players: string[] = [];
+                for (const p of state.players) {
                     if (p.name.length == 0)
                         continue;
                     players.push(p.name);
@@ -60,19 +60,19 @@ export class Updater {
                 if (players.length && !this.data.getAdmins() && getMessenger(this.data.guild).getServerData(this.data)?.getAdmins())
                     this.notifs.set(NotifyType.ADMIN, undefined);
                 getMessenger(this.data.guild)?.update(this.data);
-                let newData = getMessenger(this.data.guild).getServerData(this.data);
+                const newData = getMessenger(this.data.guild).getServerData(this.data);
                 if (this.everOnline) {
                     if (newData?.joined)
-                        for (let p of newData.joined) {
-                            let joined = this.notifs.get(NotifyType.PLAYER);
-                            if (!joined)
+                        for (const p of newData.joined) {
+                            let joined: Array<{ name: string, online: boolean }> = this.notifs.get(NotifyType.PLAYER) as Array<{ name: string, online: boolean }>;
+                            if (!joined || !(joined instanceof Array))
                                 joined = [];
                             joined.push({ name: p, online: true });
                             this.notifs.set(NotifyType.PLAYER, joined);
                         }
                     if (newData?.left)
-                        for (let p of newData.left) {
-                            let left = this.notifs.get(NotifyType.PLAYER);
+                        for (const p of newData.left) {
+                            let left: Array<{ name: string, online: boolean }> = this.notifs.get(NotifyType.PLAYER) as Array<{ name: string, online: boolean }>;
                             if (!left)
                                 left = [];
                             left.push({ name: p, online: false });
@@ -99,22 +99,22 @@ export class Updater {
         }
     }
 
-    notify() {
-        for (let profile of clientProfiles.values()) {
-            for (let option of profile.options.filter(o => o.guild == this.data.guild && o.server == this.data.name && this.notifs.has(o.type))) {
-                let value = this.notifs.get(option.type);
+    notify(): void {
+        for (const profile of clientProfiles.values()) {
+            for (const option of profile.options.filter(o => o.guild == this.data.guild && o.server == this.data.name && this.notifs.has(o.type))) {
+                const value = this.notifs.get(option.type);
                 let message = "";
                 switch (option.type) {
                     case NotifyType.ADMIN:
                         message = "**" + this.data.name + "** has no admins online.";
                         break;
                     case NotifyType.MAP:
-                        if (!this.matches(option.value, value))
+                        if (!this.matches(option.value, value as string))
                             break;
                         message = "**" + this.data.name + "**'s map has changed to `" + value + "`.";
                         break;
                     case NotifyType.PLAYER:
-                        for (let player of value) {
+                        for (const player of value as Array<{ name: string, online: boolean }>) {
                             if (!this.matches(option.value, player.name))
                                 break;
                             message = "`" + player.name + "` " + (player.online ? "joined" : "left") + " **" + this.data.name + "**."
@@ -126,18 +126,18 @@ export class Updater {
                 }
                 if (!message)
                     continue;
-                let stopId = Math.random() + "";
-                let stop = new MessageActionRow().addComponents(
+                const stopId = Math.random() + "";
+                const stop = new MessageActionRow().addComponents(
                     new MessageButton().setCustomId(stopId)
                         .setLabel("Unsubscribe").setStyle("DANGER").setEmoji("🛑"));
-                let resumeId = Math.random() + "";
-                let resume = new MessageActionRow().addComponents(
+                const resumeId = Math.random() + "";
+                const resume = new MessageActionRow().addComponents(
                     new MessageButton().setCustomId(resumeId)
                         .setLabel("Re-subscribe").setStyle("SUCCESS").setEmoji("✅"));
 
                 sendDM(profile.id, { content: message, components: [stop] }).then(msg => {
                     const stopFilter = (i: MessageComponentInteraction) => i.customId == stopId || i.customId == resumeId && i.user.id === profile.id;
-                    let collector = msg?.channel.createMessageComponentCollector({ filter: stopFilter });
+                    const collector = msg?.channel.createMessageComponentCollector({ filter: stopFilter });
                     collector?.on("collect", async click => {
                         if (click.customId == stopId) {
                             profile.options = profile.options.filter(p => p.guild != option.guild || p.server != option.server || p.type != option.type || p.value != option.value);
@@ -145,7 +145,7 @@ export class Updater {
                             if (click.message.content.startsWith("You will"))
                                 await click.update({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
                             else {
-                                let used = new MessageButton().setLabel("Unsubscribed").setEmoji("❌").setStyle("DANGER").setCustomId("unused").setDisabled(true);
+                                const used = new MessageButton().setLabel("Unsubscribed").setEmoji("❌").setStyle("DANGER").setCustomId("unused").setDisabled(true);
                                 await click.update({ components: [new MessageActionRow().addComponents(used)] });
                                 await click.followUp({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
                             }
@@ -176,11 +176,12 @@ export class Updater {
         try {
             reg = new RegExp(query);
         } catch (error) {
+            console.error(error);
         }
         return (reg && reg.test(value)) || value.includes(query);
     }
 
-    stop() {
+    stop(): void {
         this.stopped = true;
     }
 
@@ -189,7 +190,7 @@ export class Updater {
      * @param cooldown Time to wait before starting task
      * @param rate Time between tasks
      */
-    public start(cooldown: number, rate: number) {
+    public start(cooldown: number, rate: number): void {
         setTimeout(() => {
             if (this.stopped)
                 return;

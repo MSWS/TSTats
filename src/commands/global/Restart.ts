@@ -12,7 +12,7 @@ module.exports = {
             await interaction.reply({ content: "Sorry! Only my maker (<@219601562048135168>) can execute this.", ephemeral: true });
             return;
         }
-        let embed = new MessageEmbed();
+        const embed = new MessageEmbed();
         embed.setTitle("Restarting...");
         embed.setColor("DARK_RED");
         embed.setFooter("Build Version " + version + "." + config.build);
