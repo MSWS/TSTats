@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction } from "discord.js";
-import { restart } from "..";
+import { CommandInteraction, MessageEmbed } from "discord.js";
+import { restart, version, config } from "..";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -12,8 +12,11 @@ module.exports = {
             await interaction.reply({ content: "Sorry! Only my maker (<@219601562048135168>) can execute this.", ephemeral: true });
             return;
         }
-
-        await interaction.reply({ content: "Restarting...", ephemeral: true });
+        let embed = new MessageEmbed();
+        embed.setTitle("Restarting...");
+        embed.setColor("DARK_RED");
+        embed.setFooter("Build Version " + version + "." + config.build);
+        await interaction.reply({ embeds: [embed], ephemeral: true });
         restart();
     }
 };

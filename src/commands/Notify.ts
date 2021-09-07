@@ -1,14 +1,14 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, MessageEmbed } from "discord.js";
 import { getClientProfile, getData } from "..";
-import { ClientOption } from "../ClientProfile";
+import { ClientOption, ClientProfile, getSummary, NotifyType } from "../ClientProfile";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("notify")
         .setDescription("Toggles notification for when a server's status changes")
         .addStringOption(o => o.setName("server").setDescription("The server whose status will be monitored").setRequired(true))
         .addStringOption(o => o.setName("type").setDescription("The thing to monitor").addChoices([
-            ["Map Change", "map"], ["Online/Offline Status", "status"], ["Player Join/Leave", "player"], ["No Admins", "admin"], ["Reset", "reset"], ["Clear", "reset"]
+            ["Map Change", "MAP"], ["Online/Offline Status", "STATUS"], ["Player Session", "PLAYER"], ["No Admins", "ADMIN"], ["List", "LIST"], ["Clear", "CLEAR"]
         ]).setRequired(true))
         .addStringOption(o => o.setName("value").setDescription("The name of the map / player to notify")),
     async execute(interaction: CommandInteraction) {
@@ -21,11 +21,7 @@ module.exports = {
             await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
             return;
         }
-        let server = getData(interaction.guildId, sn);
-        if (!server) {
-            await interaction.reply({ content: "Unknown server.", ephemeral: true });
-            return;
-        }
+
         let type = interaction.options.getString("type");
         if (!type) {
             await interaction.reply({ content: "Unknown type.", ephemeral: true });
@@ -41,26 +37,43 @@ module.exports = {
             return;
         }
 
-        if (type == "reset") {
+        let server = getData(interaction.guildId, sn);
+
+        if (type == "LIST" || value?.toLowerCase() == "list" || sn.toLowerCase() == "list" || sn.toLowerCase() == "all") {
+            let embeds;
+            if (value) {
+                embeds = getEmbed(profile, interaction.guildId, server ? server.name : undefined, type as NotifyType);
+            } else {
+                embeds = getEmbed(profile, interaction.guildId, server ? server.name : undefined);
+            }
+            if (!embeds || !embeds.length) {
+                await interaction.reply({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
+                return;
+            }
+            await interaction.reply({ embeds: embeds, ephemeral: true });
+            return;
+        }
+
+        if (!server) {
+            await interaction.reply({ content: "Unknown server.", ephemeral: true });
+            return;
+        }
+
+        if (type == "CLEAR") {
             if (profile?.options)
                 profile.options = profile?.options.filter(opt => opt.server != server?.name);
-            await interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + "." })
+            await interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true })
             profile?.save();
             return;
         }
 
-        if (value == "reset" || value == "clear") {
+        let opt = new ClientOption({ guild: interaction.guildId, server: server.name, type: type as NotifyType, value: interaction.options.getString("value") });
+
+        if (value == "CLEAR") {
             if (profile.options)
                 profile.options = profile.options.filter(opt => opt.server != server?.name || opt.type != type);
-            await interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + server.name + "." })
+            await interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
             profile?.save();
-            return;
-        }
-
-        let opt = new ClientOption({ guild: interaction.guildId, server: server.name, type: type, value: interaction.options.getString("value") });
-
-        if (type === "player" && !opt.value) {
-            await interaction.reply({ content: "You must specify a player to watch.", ephemeral: true });
             return;
         }
 
@@ -75,25 +88,19 @@ module.exports = {
 
         profile.options.push(opt);
         profile.save();
-
-        let str = "";
-        switch (type) {
-            case "map":
-                str = "when the map changes" + (value ? " to " + value : "") + " on " + server.name;
-                break;
-            case "player":
-                str = "when " + (value ? value : "any player") + " joins on " + server.name;
-                break;
-            case "status":
-                str = "when " + server.name + " goes offline/online";
-                break;
-            case "admin":
-                str = "when there are no admins on " + server.name;
-                break;
-            default:
-                await interaction.reply({ content: "Unknown notification setting.", ephemeral: true });
-                return;
-        }
-        await interaction.reply({ content: "You will now be notified " + str + ".", ephemeral: true });
+        await interaction.reply({ content: opt.getDescription("You will now be notified "), ephemeral: true });
     },
 };
+
+function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?: NotifyType): MessageEmbed[] {
+    let result = [];
+    let options = profile.options.filter(opt => opt.guild == guild && (opt.server == server || !server) && (opt.type == type || !type));
+    for (let option of options) {
+        let embed = new MessageEmbed();
+        embed.setTitle(getSummary(option.type));
+        embed.setDescription(option.getDescription("Currently notifying you "));
+        embed.setColor(option.getColor());
+        result.push(embed);
+    }
+    return result;
+}

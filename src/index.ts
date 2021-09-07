@@ -79,6 +79,10 @@ export function init() {
   });
 
   client.on('interactionCreate', async interaction => {
+    if (interaction.isButton()) {
+
+    }
+
     if (!interaction.isCommand()) return;
 
     let command: any = commands.get(interaction.commandName);

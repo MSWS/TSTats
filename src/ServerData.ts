@@ -53,13 +53,11 @@ export class ServerData {
         for (let p of data.players) {
             if (!this.players.includes(p)) {
                 this.joined.push(p);
-                console.log("+", p);
             }
         }
         for (let p of this.players) {
             if (!data.players.includes(p)) {
                 this.left.push(p);
-                console.log("-", p);
             }
         }
         this.players = data.players;
