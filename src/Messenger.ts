@@ -1,114 +1,124 @@
 import { generator } from ".";
 import { ServerData } from "./ServerData";
-import { getTextChannel, sendMessageID } from "./Utils";
+import { deleteMessage, getTextChannel, sendMessageID } from "./Utils";
 
+/**
+ * Responsible for purging and timing the sending of messages
+ */
 export class Messenger {
-
-    data = new Map<string, ServerData[]>();
-    cancelled = false;
+    data: ServerData[] = [];
+    stopped = false;
 
     public constructor(servers: ServerData[]) {
-        servers.forEach(c => {
-            let channels = this.data.get(c.channel);
-            if (channels == null)
-                channels = [];
-            channels.push(c);
-            this.data.set(c.channel, channels);
-        });
-        if (this.data.size > 1) {
-            console.warn("Timer was created with " + this.data.size + " channels.");
-            console.warn("This is usually unintended, each timer should only have 1 channel.")
-        }
-
-        for (let c of this.data.keys()) {
-            this.purge(c);
+        this.data = servers;
+        for (const c of this.data) {
+            this.purge(c.channel);
         }
     }
 
-    add(data: ServerData) {
-        let channels = this.data.get(data.channel);
-        if (channels == null)
-            channels = [];
-        channels.push(data);
-        this.data.set(data.channel, channels);
-        this.update(data);
+    stop(): void {
+        this.stopped = true;
+    }
+
+    /**
+     * Adds the specified serverdata to be sent
+     * @param data ServerData to add
+     */
+    add(data: ServerData): void {
+        this.data.push(data);
         setTimeout(() => this.send(data), 1000);
     }
 
-    async purge(channel: string) {
-        getTextChannel(channel)?.bulkDelete(50).catch(error => {
-            console.error('Failed to delete the message:', error);
-        });
+    remove(data: ServerData): void {
+        this.data = this.data.filter(d => d.name !== data.name);
+        deleteMessage(data);
     }
 
-    send(data: ServerData) {
+    /**
+     * Purges the specified channel
+     * @param channel 
+     */
+    async purge(channel: string): Promise<void> {
+        getTextChannel(channel)?.bulkDelete(50).catch(error => { if (error) console.error('Failed to delete the message:', error); });
+    }
+
+    /**
+     * Sends the serverdata to the appropriate channel
+     * @param data 
+     */
+    send(data: ServerData): void {
         if (!this.getServerData(data))
             console.warn("Sending server data " + data.channel + " that we aren't responsible for it!");
         sendMessageID(data.channel, generator.generateMessage(data), data);
     }
 
-    getServers(channel: string): ServerData[] {
-        let d = this.data.get(channel);
-        return d ? d : [];
+    /**
+     * Gets the servers linked to the messenger
+     * @returns 
+     */
+    getServers(): ServerData[] {
+        return this.data;
     }
 
-    getChannels(): string[] {
-        return Array.from(this.data.keys());
-    }
-
+    /**
+     * Gets the server data instance that matches with the parameter's data
+     * @param data ServerData to match
+     * @returns The matched server data or null if none
+     */
     public getServerData(data: ServerData): ServerData | null {
-        for (let svs of this.data.values()) {
-            for (let server of svs) {
-                if (server.name == data.name)
-                    return server;
-            }
+        for (const server of this.data) {
+            if (server.name === data.name)
+                return server;
         }
         return null;
     }
 
-    public cancel() {
-        this.cancelled = true;
-    }
-
-    public update(data: ServerData) {
-        let dat = this.getServerData(data);
+    /**
+     * Updates our internal data with the provided argument's data
+     * @param data New ServerData to update to
+     * @returns 
+     */
+    public update(data: ServerData): void {
+        const dat = this.getServerData(data);
         if (!dat) {
-            console.warn("Attempted to save " + data.channel + " when we aren't responsible for it.");
+            console.warn("Attempted to save " + data.name + " to " + data.channel + " when we aren't responsible for it.");
             return;
         }
         dat.update(data);
     }
 
-    
-
-    public start(cooldown: number, rate: number) {
-        if (this.cancelled)
-            return;
+    /**
+     * Starts the repeating task to send discord messages.
+     * @param cooldown Time to wait before starting task
+     * @param rate Time between tasks
+     */
+    public start(cooldown: number, rate: number): void {
         setTimeout(() => {
-            if (this.cancelled)
+            if (this.stopped)
                 return;
-            for (let data of this.data.values())
-                data.forEach(d => this.send(d));
-            for (let channel of this.data.keys())
-                this.updateTopic(channel);
+            this.data.forEach(d => this.send(d));
+            for (const d of this.data)
+                this.updateTopic(d.channel);
             this.start(rate, rate);
         }, cooldown);
     }
 
-    updateTopic(channel: string) {
-        let servers = this.data.get(channel);
-        if (servers == undefined) {
+    /**
+     * Updates channels which we send messages to with a summary of information of servers in that channel
+     * @param channel Channel to update
+     */
+    updateTopic(channel: string): void {
+        const servers = this.data.filter(s => s.channel === channel);
+        if (servers === undefined) {
             console.warn("Attempted to set %s's topic but there are no servers linked to it", channel);
             return;
         }
         let players = 0, max = 0;
-        for (let server of servers) {
+        for (const server of servers) {
             players += server.players.length;
             max += server.max;
         }
 
-        getTextChannel(channel)?.setTopic(players + "/" + max + " (" + Math.round(players / max * 1000) / 10 + "%) players across " + servers.length + " server" + (servers.length == 1 ? "" : "s"));
+        getTextChannel(channel)?.setTopic(players + "/" + max + " (" + Math.round(players / max * 1000) / 10 + "%) players across " + servers.length + " server" + (servers.length === 1 ? "" : "s"));
     }
-
-
 }

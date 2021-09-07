@@ -1,0 +1,12 @@
+{
+    "token": "",
+    "discordRate": 60,
+    "sourceRate": 60,
+    "discordDelay": 3,
+    "sourceDelay": 0,
+    "topicRate": 300,
+    "useServerName": true,
+    "lineLength": 60,
+    "cacheRate": 5,
+    "build": 0
+}
