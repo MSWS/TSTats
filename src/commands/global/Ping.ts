@@ -4,7 +4,8 @@ import { CommandInteraction } from "discord.js";
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("ping")
-        .setDescription("Pings the bot."),
+        .setDescription("Pings the bot.")
+        .setDefaultPermission(true),
     async execute(interaction: CommandInteraction) {
         await interaction.reply({ content: "Pong.", ephemeral: true });
     }

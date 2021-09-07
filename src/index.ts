@@ -17,7 +17,8 @@ fs.mkdir(path.resolve(__dirname, "./configs"), () => { });
 export const clientProfiles = new Map<string, ClientProfile>();
 
 const commands = new Map<string, any>(); // Map for execution
-const commandArray: any[] = []; // Array for registrating commands
+const guildCommands: any[] = []; // Array for registrating commands
+const globalCommands: any[] = [];
 
 export let config = require(path.resolve(__dirname, "./config.json"));
 export let generator = new EmbedGenerator();
@@ -210,82 +211,93 @@ function loadClientProfiles() {
  * Loads and populates both the commands map (for execution) and commandArray (for registration).
  */
 function loadCommands() {
-  const commandFiles = fs.readdirSync(path.resolve(__dirname, './commands')).filter((file: string) => file.endsWith('.js'));
+  const guildCommandFiles = fs.readdirSync(path.resolve(__dirname, './commands/guild')).filter((file: string) => file.endsWith('.js'));
+  const globalCommandFiles = fs.readdirSync(path.resolve(__dirname, './commands/global')).filter((file: string) => file.endsWith('.js'));
   commands.clear();
-  commandArray.length = 0;
+  guildCommands.length = 0;
+  globalCommands.length = 0;
 
-  for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
+  for (const file of guildCommandFiles) {
+    const command = require(`./commands/guild/${file}`);
     commands.set(command.data.name, command);
-    console.log("Registering command %s (data: %s)", command.data.name, command.data);
-    commandArray.push(command.data.toJSON());
+    console.log("Registering guild command %s (data: %s)", command.data.name, command.data);
+    guildCommands.push(command.data.toJSON());
+  }
+  for (const file of globalCommandFiles) {
+    const command = require(`./commands/global/${file}`);
+    commands.set(command.data.name, command);
+    console.log("Registering global command %s (data: %s)", command.data.name, command.data);
+    globalCommands.push(command.data.toJSON());
   }
 }
 
 
 /**
  * Registers commands and updates the permissions via updatePermissions.
- * @param guild The guild to update commands for, if not specified, updates all guild's commands
+ * @param guildId The guild to update commands for, if not specified, updates all guild's commands
  */
-export function registerCommands(guild?: string) {
+export function registerCommands(guildId?: string) {
   (async () => {
-    if (guild) {
-      client.guilds.cache.get(guild)?.fetch().then(g => {
-        g.commands.fetch().then(cmds => {
-          for (let cmd of cmds) {
-            if (commands.has(cmd[1].name))
-              continue;
-            cmd[1].delete();
-          }
-        });
-        rest.put(
-          Routes.applicationGuildCommands(config.clientId, g.id), { body: commandArray },
-        ).then(() => {
-          updatePermissions(g.id);
-        });
-      });
+    if (!guildId) {
+      // let app = await client.application?.fetch();
+      // if (app) {
+      //   for (let cmd of (await app.commands.fetch()).values()) {
+      //     if (globalCommands.some(c => cmd.name == c.name))
+      //       continue;
+      //     console.log("Deleting " + JSON.stringify(cmd));
+      //     cmd.delete();
+      //   }
+      // }
+      for (let guild of await client.guilds.fetch()) {
+        registerCommands(guild[0]);
+      }
+      // rest.put(Routes.applicationCommands(config.clientId), { body: globalCommands });
       return;
     }
-    for (let guild of await client.guilds.fetch()) {
-      registerCommands(guild[0]);
+    let guild = client.guilds.fetch(guildId);
+    let gCommands = await (await guild).commands.fetch();
+    for (let cmd of gCommands) {
+      if (commands.has(cmd[1].name))
+        continue;
+      cmd[1].delete();
     }
+    rest.put(Routes.applicationGuildCommands(config.clientId, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId); });
   })();
 }
 
 /**
  * Updates the specified guild's command permissions. By default, the highest role has access to all commands. Any role that has access to manage the guild also has access to all commands.
- * @param guild The guild to update permissions for, if not specified, updates all guild's permissions
+ * @param guildId The guild to update permissions for, if not specified, updates all guild's permissions
  */
-export function updatePermissions(guild?: string) {
+export function updatePermissions(guildId?: string) {
   (async () => {
-    if (guild) {
-      client.guilds.cache.get(guild)?.fetch().then(async g => {
-        let serverPerm: ApplicationCommandPermissionData[] = [{
-          id: g.roles.highest.id,
-          permission: true,
-          type: "ROLE"
-        }];
-        g.roles.fetch().then(roles => {
-          for (let role of roles) {
-            if (!role[1].permissions.has("MANAGE_GUILD") && !getGuildProfile(g.id).elevated.includes(role[0]))
-              continue;
-            serverPerm.push({
-              id: role[0],
-              permission: true,
-              type: "ROLE"
-            })
-          }
-        });
-        let commands = g.commands.fetch();
-        for (let cmd of await commands) {
-          await cmd[1].permissions.set({ permissions: serverPerm });
-        }
-      });
+    if (!guildId) {
+      for (let guild of await client.guilds.fetch()) {
+        updatePermissions(guild[0]);
+      }
       return;
     }
-    for (let guild of await client.guilds.fetch()) {
-      updatePermissions(guild[0]);
+    let guild = await client.guilds.fetch(guildId);
+    let serverPerm: ApplicationCommandPermissionData[] = [{
+      id: guild.roles.highest.id,
+      permission: true,
+      type: "ROLE"
+    }];
+    let roles = await guild.roles.fetch();
+    for (let role of roles) {
+      if (!role[1].permissions.has("MANAGE_GUILD") && !getGuildProfile(guild.id).elevated.includes(role[0]))
+        continue;
+      serverPerm.push({
+        id: role[0],
+        permission: true,
+        type: "ROLE"
+      })
     }
+    let commands = guild.commands.fetch();
+    for (let cmd of await commands) {
+      await cmd[1].permissions.set({ permissions: serverPerm });
+    }
+    return;
   })();
 }
 

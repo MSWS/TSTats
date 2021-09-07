@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
 import { CommandInteraction, GuildChannel, MessageEmbed } from "discord.js";
-import { addUpdater, config, getData, getGuildProfile, getMessenger } from "..";
-import { ServerData } from "../ServerData";
-import { Updater } from "../Updater";
-import { getTextChannel } from "../Utils";
+import { addUpdater, config, getData, getGuildProfile, getMessenger } from "../..";
+import { ServerData } from "../../ServerData";
+import { Updater } from "../../Updater";
+import { getTextChannel } from "../../Utils";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("addserver")

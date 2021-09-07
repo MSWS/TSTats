@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
-import { getGuildServers } from "..";
+import { getGuildServers } from "../..";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("servers")

@@ -1,12 +1,13 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { client, config, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start, version } from "..";
-import { ServerData } from "../ServerData";
+import { client, config, getGuildServers, getMaxPlayerCount, getPlayerCount, getServers, start, version } from "../..";
+import { ServerData } from "../../ServerData";
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("stats")
-        .setDescription("Retreives the bot's stats"),
+        .setDescription("Retreives the bot's stats")
+        .setDefaultPermission(true),
     async execute(interaction: CommandInteraction) {
         let globalPlayers = getPlayerCount(), globalMax = getMaxPlayerCount();
         let guildServers, guildPlayers, guildMax;
@@ -67,7 +68,7 @@ module.exports = {
 
         embed.addField("Uptime", date.toISOString().substring(11, 19), true);
         embed.addField("Build Version", version + "." + config.build + "", true);
-        embed.setFooter("Requested by " + interaction.member?.user.username);
+        embed.setFooter("Requested by " + interaction.user.username);
         await interaction.reply({ embeds: [embed] });
 
         if (guildServers && guildPlayers && guildMax) {
@@ -81,7 +82,7 @@ module.exports = {
                 embed.addField("Most Popular", globalPopular.name + " (" + (Math.round(guildPopular.getOnline() / guildPlayers * 1000) / 10) + "%)");
                 embed.addField("Least Popular", guildUnpopular.name + " (" + (Math.round(guildUnpopular.getOnline() / guildPlayers * 1000) / 10) + "%)");
             }
-            embed.setFooter("Requested by " + interaction.member?.user.username);
+            embed.setFooter("Requested by " + interaction.user.username);
             await interaction.followUp({ embeds: [embed] });
         }
     },

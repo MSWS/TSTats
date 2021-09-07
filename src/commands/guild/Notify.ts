@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { client, getClientProfile, getData } from "..";
-import { ClientOption, ClientProfile, getSummary, NotifyType } from "../ClientProfile";
+import { client, getClientProfile, getData } from "../..";
+import { ClientOption, ClientProfile, getSummary, NotifyType } from "../../ClientProfile";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("notify")

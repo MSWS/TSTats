@@ -1,8 +1,8 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import { getData, getGuildProfile, getMessenger, removeUpdater } from "..";
-import { ServerData } from "../ServerData";
+import { getData, getGuildProfile, getMessenger, removeUpdater } from "../..";
+import { ServerData } from "../../ServerData";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("deleteserver")

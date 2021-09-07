@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, SlashCommandRoleOption } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
-import { getGuildProfile, registerCommands } from "..";
+import { getGuildProfile, registerCommands } from "../..";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("revokeaccess")
