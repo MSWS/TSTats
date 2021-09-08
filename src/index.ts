@@ -28,7 +28,7 @@ const globalCommands: Command[] = [];
 export let config: { token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number, useServerName: boolean, lineLength: number, cacheRate: number, build: number };
 export const generator = new EmbedGenerator();
 export let client: Client;
-export const version = "1.0.0";
+export const version = "1.0.1";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;

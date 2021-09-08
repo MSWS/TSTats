@@ -1,4 +1,4 @@
-import { MessageActionRow, MessageButton, MessageComponentInteraction } from "discord.js";
+import { MessageActionRow, MessageButton, MessageComponentInteraction, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
 import { clientProfiles, getMessenger } from ".";
 import { NotifyType } from "./ClientProfile";
 import { ServerData } from "./ServerData";
@@ -100,6 +100,53 @@ export class Updater {
     }
 
     notify(): void {
+        const stopId = Math.random() + "", snoozeId = Math.random() + "", selectId = Math.random() + "", unsnoozeId = Math.random() + "";
+        const stop = new MessageActionRow().addComponents(
+            new MessageButton().setCustomId(stopId)
+                .setLabel("Unsubscribe").setStyle("DANGER").setEmoji("🛑"),
+            new MessageButton().setCustomId(snoozeId)
+                .setLabel("Snooze").setStyle("PRIMARY").setEmoji("💤"));
+        const resumeId = Math.random() + "";
+        const resume = new MessageActionRow().addComponents(
+            new MessageButton().setCustomId(resumeId)
+                .setLabel("Re-subscribe").setStyle("SUCCESS").setEmoji("✅"));
+        const unsnoozeRow = new MessageActionRow().addComponents(
+            new MessageButton().setCustomId(unsnoozeId)
+                .setLabel("Unsnooze").setStyle("SECONDARY").setEmoji("⏰"));
+
+        const selectRow = new MessageActionRow().addComponents(new MessageSelectMenu().setCustomId(selectId).setPlaceholder("Snooze Duration")
+            .addOptions([{
+                label: "5 Minutes",
+                description: "Snooze this notification for 5 minutes",
+                value: "5"
+            }, {
+                label: "10 Minutes",
+                description: "Snooze this notification for 10 minutes",
+                value: "10"
+            }, {
+                label: "30 Minutes",
+                description: "Snooze this notification for 30 minutes",
+                value: "30"
+            }, {
+                label: "1 Hour",
+                description: "Snooze this notification for 1 hour",
+                value: "60"
+            }, {
+                label: "3 Hours",
+                "description": "Snooze this notification for 3 hours",
+                value: "180"
+            }, {
+                label: "12 Hours",
+                "description": "Snooze this notification for 12 hours",
+                value: "720"
+            }, {
+                label: "1 Day",
+                "description": "Snooze this notification for 1 day",
+                value: "1440"
+            }
+            ]));
+
+
         for (const profile of clientProfiles.values()) {
             for (const option of profile.options.filter(o => o.guild === this.data.guild && o.server === this.data.name && this.notifs.has(o.type))) {
                 const value = this.notifs.get(option.type);
@@ -129,20 +176,39 @@ export class Updater {
                 }
                 if (!message)
                     continue;
-                const stopId = Math.random() + "";
-                const stop = new MessageActionRow().addComponents(
-                    new MessageButton().setCustomId(stopId)
-                        .setLabel("Unsubscribe").setStyle("DANGER").setEmoji("🛑"));
-                const resumeId = Math.random() + "";
-                const resume = new MessageActionRow().addComponents(
-                    new MessageButton().setCustomId(resumeId)
-                        .setLabel("Re-subscribe").setStyle("SUCCESS").setEmoji("✅"));
 
                 sendDM(profile.id, { content: message, components: [stop] }).then(msg => {
-                    const stopFilter = (i: MessageComponentInteraction) => i.customId === stopId || i.customId === resumeId && i.user.id === profile.id;
-                    const collector = msg?.channel.createMessageComponentCollector({ filter: stopFilter });
+                    if (!msg)
+                        return;
+                    const stopFilter = (i: MessageComponentInteraction) => {
+                        return (i.customId === stopId || i.customId === resumeId || i.customId === snoozeId || i.customId === selectId || i.customId === unsnoozeId) && i.user.id === profile.id;
+                    };
+                    const collector = msg.channel.createMessageComponentCollector({ filter: stopFilter, time: 60000 });
                     collector?.on("collect", async click => {
-                        if (click.customId === stopId) {
+                        if (click.customId === selectId) {
+                            if (!profile.options.includes(option)) {
+                                await click.followUp({ content: "You have alredy unsubscribed from these notifications.", ephemeral: true });
+                                return;
+                            }
+                            const select = click as SelectMenuInteraction;
+                            const minutes = parseInt(select.values[0]);
+                            profile.options = profile.options.filter(p => p.guild !== option.guild || p.server !== option.server || p.type !== option.type || p.value !== option.value);
+                            setTimeout(function () {
+                                click.editReply({ content: "Snooze has expired, you are now receiving notifications.", components: [] }).catch((e) => { if (e) console.error("Unable to delete message: ", e); });
+                                if (profile.options.some(e => e.guild === option.guild && e.server === option.server && e.type === option.type && e.value === option.value))
+                                    return;
+                                profile.options.push(option);
+                            }, minutes * 60 * 1000);
+                            await click.update({ content: "Successfully snoozed notifications for " + option.getDescription(), components: [unsnoozeRow] });
+                        } else if (click.customId === snoozeId) {
+                            if (!profile.options.includes(option)) {
+                                await click.followUp({ content: "You have alredy unsubscribed from these notifications.", ephemeral: true });
+                                return;
+                            }
+                            const used = new MessageButton().setLabel("Snoozed").setEmoji("🛏️").setStyle("PRIMARY").setCustomId("unused").setDisabled(true);
+                            await click.update({ components: [new MessageActionRow().addComponents(used)] });
+                            await click.followUp({ content: "Snoozing will temporarily disable notifications for " + option.getDescription(), components: [selectRow], fetchReply: true });
+                        } else if (click.customId === stopId) {
                             profile.options = profile.options.filter(p => p.guild !== option.guild || p.server !== option.server || p.type !== option.type || p.value !== option.value);
                             profile.save();
                             if (click.message.content.startsWith("You will"))
@@ -157,8 +223,17 @@ export class Updater {
                             profile.save();
 
                             await click.update({ content: "You will now be notified " + option.getDescription(), components: [stop] });
+                        } else if (click.customId === unsnoozeId) {
+                            profile.options.push(option);
+                            profile.save();
+
+                            const used = new MessageButton().setLabel("Unsnoozed").setEmoji("⏰").setStyle("PRIMARY").setCustomId("unused").setDisabled(true);
+                            await click.update({ components: [new MessageActionRow().addComponents(used)] });
+                            await click.followUp({ content: "Successfully re-enabled notifications for " + option.getDescription() });
                         }
                     });
+
+
                 });
             }
         }

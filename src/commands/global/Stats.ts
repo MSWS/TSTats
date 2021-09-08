@@ -69,7 +69,7 @@ module.exports = {
         embed.addField("Uptime", date.toISOString().substring(11, 19), true);
         embed.addField("Build Version", version + "." + config.build + "", true);
         embed.setFooter("Requested by " + interaction.user.username);
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed], ephemeral: true });
 
         if (guildServers && guildPlayers && guildMax) {
             embed = new MessageEmbed();
