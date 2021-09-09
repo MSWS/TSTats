@@ -1,18 +1,18 @@
-import { ApplicationCommandPermissionData, Client, Intents, Interaction } from "discord.js";
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
+import { ApplicationCommandPermissionData, Client, CommandInteraction, Intents, Interaction, MessageActionRow, MessageSelectMenu, MessageSelectOptionData, SelectMenuInteraction } from "discord.js";
 import { ClientProfile } from "./ClientProfile";
 import { EmbedGenerator } from "./Generator";
 import { GuildProfile } from "./GuildProfile";
 import { Messenger } from "./Messenger";
 import { ServerData } from "./ServerData";
 import { Updater } from "./Updater";
-import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
 import fs = require('fs');
 import path = require("path");
 
 // Create the directories before we fetch them
-fs.mkdir(path.resolve(__dirname, "./profiles"), (e) => { if (e) console.error("Unable to make profiles directory: ", e); });
-fs.mkdir(path.resolve(__dirname, "./configs"), (e) => { if (e) console.error("Unable to make config directory: ", e); });
+fs.mkdir(path.resolve(__dirname, "./profiles"), (e) => { if (e?.errno !== -17) console.error("Unable to make profiles directory: ", e); });
+fs.mkdir(path.resolve(__dirname, "./configs"), (e) => { if (e?.errno !== -17) console.error("Unable to make configs directory: ", e); });
 
 export const clientProfiles = new Map<string, ClientProfile>();
 
@@ -38,12 +38,8 @@ const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
 const updateMap = new Map<string, Updater>();
 
-
-console.log("Loading config...");
-
 import(path.resolve(__dirname, "./config.json")).then(c => {
   config = c;
-  console.log("Config loaded: " + c);
   init();
 });
 
@@ -100,9 +96,10 @@ export function init(): void {
       command.execute(interaction);
     } catch (error) {
       console.error(error);
-      interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch(() => {
+      if (interaction.replied)
         interaction.followUp({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
-      });
+      else
+        interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
     }
   });
 
@@ -335,6 +332,88 @@ export function getData(guild: string, name: string, strict = false): ServerData
       return server;
   }
   return undefined;
+}
+
+export async function selectData(guild: string, name: string, interaction: CommandInteraction, mustSee = true): Promise<Promise<ServerData> | undefined> {
+  const possible = [];
+  const g = client.guilds.cache.get(guild);
+  for (const data of getGuildServers(guild)) {
+    if (data.name.toLowerCase() === name.toLowerCase())
+      return data;
+    if (similarity(name, data.name) === 0)
+      continue;
+    if (mustSee) {
+      const channel = g?.channels.cache.get(data.channel);
+      if (!channel?.permissionsFor(interaction.user)?.has("VIEW_CHANNEL"))
+        continue;
+    }
+    possible.push(data);
+  }
+
+  if (!possible.length)
+    return undefined;
+  if (possible.length === 1)
+    return possible[0];
+  possible.sort((a, b) => similarity(name, b.name) - similarity(name, a.name));
+  possible.length = Math.min(possible.length, 5);
+  const options: MessageSelectOptionData[] = [];
+
+  for (const data of possible)
+    options.push({ label: data.name, value: data.name, description: data.sourceName });
+
+  const id = Math.random() + "";
+  const row = new MessageActionRow().addComponents(new MessageSelectMenu().setCustomId(id).addOptions(options));
+  await interaction.reply({ content: "More than one server matched, which one did you mean?", ephemeral: true, components: [row] });
+  return interaction.channel?.awaitMessageComponent({ componentType: "SELECT_MENU" }).then(click => {
+    const c = click as SelectMenuInteraction;
+    const data = getData(guild, c.values.join(" "));
+    click.update({ content: "Selected " + data?.name, components: [] });
+    return data;
+  }).catch(e => {
+    if (e)
+      console.warn("Interaction erroed out: ", e);
+    return undefined;
+  });
+}
+
+function similarity(s1: string, s2: string): number {
+  let longer = s1;
+  let shorter = s2;
+  if (s1.length < s2.length) {
+    longer = s2;
+    shorter = s1;
+  }
+  if (longer.length === 0) {
+    return 1.0;
+  }
+  return (longer.length - editDistance(longer, shorter)) / longer.length;
+}
+
+function editDistance(s1: string, s2: string) {
+  s1 = s1.toLowerCase();
+  s2 = s2.toLowerCase();
+
+  const costs = new Array<number>();
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0)
+        costs[j] = j;
+      else {
+        if (j > 0) {
+          let newValue = costs[j - 1];
+          if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+            newValue = Math.min(Math.min(newValue, lastValue),
+              costs[j]) + 1;
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
+        }
+      }
+    }
+    if (i > 0)
+      costs[s2.length] = lastValue;
+  }
+  return costs[s2.length];
 }
 
 /**

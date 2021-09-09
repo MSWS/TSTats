@@ -1,7 +1,8 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
-import { CommandInteraction, MessageEmbed } from "discord.js";
-import { getData, getGuildProfile, getMessenger, removeUpdater } from "../..";
+import { APIMessage } from "discord-api-types";
+import { CommandInteraction, InteractionReplyOptions, Message, MessageEmbed, MessagePayload } from "discord.js";
+import { getGuildProfile, getMessenger, removeUpdater, selectData } from "../..";
 import { ServerData } from "../../ServerData";
 
 module.exports = {
@@ -19,13 +20,13 @@ module.exports = {
             await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
             return;
         }
-        const server = getData(interaction.guildId, name);
-        if (!server || !interaction.guild?.channels.cache.get(server.channel)) {
-            await interaction.reply({ content: "Unknown server specified.", ephemeral: true });
+        const server = await selectData(interaction.guildId, name, interaction);
+        if (!server) {
+            respond(interaction, { content: "Unknown server specified.", ephemeral: true });
             return;
         }
         const profile = getGuildProfile(interaction.guildId);
-        profile.servers = profile.servers.filter((data: ServerData) => data.name !== server?.name);
+        profile.servers = profile.servers.filter((data: ServerData) => data.name !== server.name);
         profile.save();
         const embed = new MessageEmbed();
 
@@ -41,3 +42,10 @@ module.exports = {
         await interaction.reply({ embeds: [embed] });
     },
 };
+
+function respond(interaction: CommandInteraction, options: string | InteractionReplyOptions | MessagePayload): Promise<Message | APIMessage | void> {
+    if (interaction.replied)
+        return interaction.followUp(options);
+    else
+        return interaction.reply(options);
+}

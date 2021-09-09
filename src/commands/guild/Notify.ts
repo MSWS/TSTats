@@ -1,7 +1,9 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction, MessageEmbed } from "discord.js";
-import { client, getClientProfile, getData } from "../..";
+import { APIMessage } from "discord-api-types";
+import { CommandInteraction, InteractionReplyOptions, Message, MessageEmbed, MessagePayload } from "discord.js";
+import { client, getClientProfile, selectData } from "../..";
 import { ClientOption, ClientProfile, getSummary, NotifyType } from "../../ClientProfile";
+import { ServerData } from "../../ServerData";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("notify")
@@ -37,10 +39,14 @@ module.exports = {
             return;
         }
 
-        const server = getData(interaction.guildId, sn);
-        if (server && !(await interaction.guild?.channels.fetch(server.channel))?.permissionsFor(interaction.user)?.has("VIEW_CHANNEL")) {
-            interaction.reply({ content: "Unknown server.", ephemeral: true });
-            return;
+        let server: ServerData | undefined;
+        if (sn.toLowerCase() !== "list" && sn.toLowerCase() !== "all") {
+            server = await selectData(interaction.guildId, sn, interaction);
+
+            if (!server) {
+                respond(interaction, { content: "Unknown server.", ephemeral: true });
+                return;
+            }
         }
 
         if (type === "LIST" || value?.toLowerCase() === "list" || sn.toLowerCase() === "list" || sn.toLowerCase() === "all") {
@@ -51,22 +57,35 @@ module.exports = {
                 embeds = getEmbed(profile, interaction.guildId, server ? server.name : undefined);
             }
             if (!embeds || !embeds.length) {
-                interaction.reply({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
+                if (interaction.replied)
+                    interaction.followUp({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
+                else
+                    interaction.reply({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
+
                 return;
             }
-            interaction.reply({ embeds: embeds, ephemeral: true });
+
+            while (embeds.length) {
+                if (interaction.replied)
+                    interaction.followUp({ embeds: embeds.slice(0, Math.min(embeds.length, 10)), ephemeral: true });
+                else
+                    interaction.reply({ embeds: embeds.slice(0, Math.min(embeds.length, 10)), ephemeral: true });
+                embeds = embeds.slice(Math.min(embeds.length, 10), embeds.length);
+            }
+
+
             return;
         }
 
         if (!server) {
-            interaction.reply({ content: "Unknown server.", ephemeral: true });
+            respond(interaction, { content: "Unknown server.", ephemeral: true });
             return;
         }
 
         if (type === "CLEAR") {
             if (profile?.options)
                 profile.options = profile?.options.filter(opt => opt.server !== server?.name);
-            interaction.reply({ content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true });
+            respond(interaction, { content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true });
             profile?.save();
             return;
         }
@@ -76,25 +95,32 @@ module.exports = {
         if (value === "CLEAR") {
             if (profile.options)
                 profile.options = profile.options.filter(opt => opt.server !== server?.name || opt.type !== type);
-            interaction.reply({ content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
+            respond(interaction, { content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
             profile?.save();
             return;
         }
 
         if (profile.options.includes(opt)) {
-            interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
+            respond(interaction, { content: "You are already being notified about that.", ephemeral: true });
             return;
         }
         if (profile.options.some(e => e.guild === opt.guild && e.server === opt.server && e.type === opt.type && e.value === opt.value)) {
-            interaction.reply({ content: "You are already being notified about that.", ephemeral: true });
+            respond(interaction, { content: "You are already being notified about that.", ephemeral: true });
             return;
         }
 
         profile.options.push(opt);
         profile.save();
-        await interaction.reply({ content: "You will now be notified " + opt.getDescription(), ephemeral: true });
+        respond(interaction, { content: "You will now be notified " + opt.getDescription(), ephemeral: true });
     },
 };
+
+function respond(interaction: CommandInteraction, options: string | InteractionReplyOptions | MessagePayload): Promise<Message | APIMessage | void> {
+    if (interaction.replied)
+        return interaction.followUp(options);
+    else
+        return interaction.reply(options);
+}
 
 function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?: NotifyType): MessageEmbed[] {
     const result = [];
