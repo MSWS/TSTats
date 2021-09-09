@@ -1,6 +1,6 @@
-import { MessageActionRow, MessageButton, MessageComponentInteraction, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
-import { clientProfiles, getMessenger } from ".";
-import { NotifyType } from "./ClientProfile";
+import { MessageActionRow, MessageButton, MessageComponentInteraction, MessageEmbed, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
+import { client, clientProfiles, getMessenger } from ".";
+import { getSummary, NotifyType } from "./ClientProfile";
 import { ServerData } from "./ServerData";
 import { sendDM } from "./Utils";
 
@@ -81,6 +81,7 @@ export class Updater {
                 }
 
                 this.everOnline = true;
+                this.notifs.set(NotifyType.DEBUG, undefined);
                 this.notify();
                 this.notifs.clear();
             }).catch(() => {
@@ -91,6 +92,7 @@ export class Updater {
                 this.data.ping = -1;
                 this.data.sourceName = this.data.name + " (Offline)";
                 getMessenger(this.data.guild)?.update(this.data);
+                this.notifs.set(NotifyType.DEBUG, undefined);
                 this.notify();
                 this.notifs.clear();
             });
@@ -100,19 +102,32 @@ export class Updater {
     }
 
     notify(): void {
-        const stopId = Math.random() + "", snoozeId = Math.random() + "", selectId = Math.random() + "", unsnoozeId = Math.random() + "";
-        const stop = new MessageActionRow().addComponents(
-            new MessageButton().setCustomId(stopId)
-                .setLabel("Unsubscribe").setStyle("DANGER").setEmoji("🛑"),
+        const stopId = Math.random() + "", snoozeId = Math.random() + "", selectId = Math.random() + "", unsnoozeId = Math.random() + "", deleteId = Math.random() + "", infoId = Math.random() + "";
+        const editId = Math.random() + "", collapseId = Math.random() + "";
+
+        const editRow = new MessageActionRow().addComponents(
+            new MessageButton().setCustomId(editId)
+                .setLabel("").setEmoji("▶️").setStyle("SECONDARY")
+        );
+        const primaryRow = new MessageActionRow().addComponents(
+            new MessageButton().setCustomId(deleteId)
+                .setLabel("Delete").setStyle("SUCCESS").setEmoji("🗑️"),
             new MessageButton().setCustomId(snoozeId)
-                .setLabel("Snooze").setStyle("PRIMARY").setEmoji("💤"));
+                .setLabel("Snooze").setStyle("PRIMARY").setEmoji("💤"),
+            new MessageButton().setCustomId(stopId)
+                .setLabel("Stop").setStyle("DANGER").setEmoji("🛑"),
+            new MessageButton().setCustomId(infoId)
+                .setLabel("Info").setStyle("SECONDARY").setEmoji("📖"),
+            new MessageButton().setCustomId(collapseId)
+                .setLabel("").setStyle("SECONDARY").setEmoji("◀️")
+        );
         const resumeId = Math.random() + "";
         const resume = new MessageActionRow().addComponents(
             new MessageButton().setCustomId(resumeId)
-                .setLabel("Re-subscribe").setStyle("SUCCESS").setEmoji("✅"));
+                .setLabel("Resume").setStyle("SUCCESS").setEmoji("✅"));
         const unsnoozeRow = new MessageActionRow().addComponents(
             new MessageButton().setCustomId(unsnoozeId)
-                .setLabel("Unsnooze").setStyle("SECONDARY").setEmoji("⏰"));
+                .setLabel("Unsnooze").setStyle("PRIMARY").setEmoji("⏰"));
 
         const selectRow = new MessageActionRow().addComponents(new MessageSelectMenu().setCustomId(selectId).setPlaceholder("Snooze Duration")
             .addOptions([{
@@ -153,7 +168,7 @@ export class Updater {
                 let message = "";
                 switch (option.type) {
                     case NotifyType.ADMIN:
-                        message = "**" + this.data.name + "** has no admins online.";
+                        message = "**" + this.data.name + "** has `0` admins but `" + this.data.getOnline() + "` players online.";
                         break;
                     case NotifyType.MAP:
                         if (!this.matches(option.value, value as string))
@@ -170,6 +185,9 @@ export class Updater {
                     case NotifyType.STATUS:
                         message = "`" + this.data.name + "` is now **" + (value ? "Online" : "Offline") + "**.";
                         break;
+                    case NotifyType.DEBUG:
+                        message = "**" + this.data.name + "** has updated.";
+                        break;
                     default:
                         message = "You seem to have a broken notification setup.";
                         break;
@@ -177,24 +195,28 @@ export class Updater {
                 if (!message)
                     continue;
 
-                sendDM(profile.id, { content: message, components: [stop] }).then(msg => {
+                sendDM(profile.id, { content: message, components: [editRow] }).then(msg => {
                     if (!msg)
                         return;
                     const stopFilter = (i: MessageComponentInteraction) => {
-                        return (i.customId === stopId || i.customId === resumeId || i.customId === snoozeId || i.customId === selectId || i.customId === unsnoozeId) && i.user.id === profile.id;
+                        return i.user.id === profile.id;
                     };
-                    const collector = msg.channel.createMessageComponentCollector({ filter: stopFilter, time: 60000 });
+                    const collector = msg.channel.createMessageComponentCollector({ filter: stopFilter });
                     collector?.on("collect", async click => {
-                        if (click.customId === selectId) {
+                        if (click.customId === editId) {
+                            await click.update({ components: [primaryRow] });
+                        } else if (click.customId === collapseId) {
+                            await click.update({ components: [editRow] });
+                        } else if (click.customId === selectId) {
                             if (!profile.options.includes(option)) {
-                                await click.followUp({ content: "You have alredy unsubscribed from these notifications.", ephemeral: true });
+                                await click.followUp({ content: "You have alredy stopped these notifications.", ephemeral: true });
                                 return;
                             }
                             const select = click as SelectMenuInteraction;
                             const minutes = parseInt(select.values[0]);
                             profile.options = profile.options.filter(p => p.guild !== option.guild || p.server !== option.server || p.type !== option.type || p.value !== option.value);
                             setTimeout(function () {
-                                click.editReply({ content: "Snooze has expired, you are now receiving notifications.", components: [] }).catch((e) => { if (e) console.error("Unable to delete message: ", e); });
+                                click.editReply({ content: "Snooze has expired, notifications have resumed.", components: [] }).catch((e) => { if (e) console.error("Unable to delete message: ", e); });
                                 if (profile.options.some(e => e.guild === option.guild && e.server === option.server && e.type === option.type && e.value === option.value))
                                     return;
                                 profile.options.push(option);
@@ -202,7 +224,7 @@ export class Updater {
                             await click.update({ content: "Successfully snoozed notifications for " + option.getDescription(), components: [unsnoozeRow] });
                         } else if (click.customId === snoozeId) {
                             if (!profile.options.includes(option)) {
-                                await click.followUp({ content: "You have alredy unsubscribed from these notifications.", ephemeral: true });
+                                await click.followUp({ content: "You have alredy stopped these notifications.", ephemeral: true });
                                 return;
                             }
                             const used = new MessageButton().setLabel("Snoozed").setEmoji("🛏️").setStyle("PRIMARY").setCustomId("unused").setDisabled(true);
@@ -214,7 +236,7 @@ export class Updater {
                             if (click.message.content.startsWith("You will"))
                                 await click.update({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
                             else {
-                                const used = new MessageButton().setLabel("Unsubscribed").setEmoji("❌").setStyle("DANGER").setCustomId("unused").setDisabled(true);
+                                const used = new MessageButton().setLabel("Stopped").setEmoji("❌").setStyle("DANGER").setCustomId("unused").setDisabled(true);
                                 await click.update({ components: [new MessageActionRow().addComponents(used)] });
                                 await click.followUp({ content: "You will no longer be notified " + option.getDescription(), components: [resume] });
                             }
@@ -222,14 +244,24 @@ export class Updater {
                             profile.options.push(option);
                             profile.save();
 
-                            await click.update({ content: "You will now be notified " + option.getDescription(), components: [stop] });
+                            await click.update({ content: "Resumed notifications for " + option.getDescription(), components: [primaryRow] });
                         } else if (click.customId === unsnoozeId) {
                             profile.options.push(option);
                             profile.save();
 
                             const used = new MessageButton().setLabel("Unsnoozed").setEmoji("⏰").setStyle("PRIMARY").setCustomId("unused").setDisabled(true);
-                            await click.update({ components: [new MessageActionRow().addComponents(used)] });
-                            await click.followUp({ content: "Successfully re-enabled notifications for " + option.getDescription() });
+                            await click.update({ content: "Successfully re-enabled notifications for " + option.getDescription(), components: [new MessageActionRow().addComponents(used)] });
+                        } else if (click.customId === deleteId) {
+                            click.channel?.messages.fetch(click.message.id).then(m => m.delete()).catch(e => {
+                                if (e) console.error("Could not delete message: ", e);
+                            });
+                        } else if (click.customId === infoId) {
+                            const guildName = client.guilds.cache.get(option.guild)?.name;
+                            const embed = new MessageEmbed();
+                            embed.setTitle(getSummary(option.type) + " Notificaiton");
+                            embed.setDescription("This notification is triggered " + option.getDescription() + "\n\nYou enabled this notification in " + guildName + "'s server.\nChannel: <#" + this.data.channel + ">");
+                            embed.setColor("AQUA");
+                            click.reply({ embeds: [embed], ephemeral: true });
                         }
                     });
 
