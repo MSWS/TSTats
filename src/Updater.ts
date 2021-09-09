@@ -123,8 +123,10 @@ export class Updater {
         );
         const resumeId = Math.random() + "";
         const resume = new MessageActionRow().addComponents(
+            new MessageButton().setCustomId(deleteId)
+                .setLabel("Delete").setStyle("SUCCESS").setEmoji("🗑️"),
             new MessageButton().setCustomId(resumeId)
-                .setLabel("Resume").setStyle("SUCCESS").setEmoji("✅"));
+                .setLabel("Resume").setStyle("PRIMARY").setEmoji("✅"));
         const unsnoozeRow = new MessageActionRow().addComponents(
             new MessageButton().setCustomId(unsnoozeId)
                 .setLabel("Unsnooze").setStyle("PRIMARY").setEmoji("⏰"));
