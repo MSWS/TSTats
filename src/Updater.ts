@@ -1,7 +1,8 @@
 import { MessageActionRow, MessageButton, MessageComponentInteraction, MessageEmbed, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
 import { client, clientProfiles, getMessenger } from ".";
 import { getSummary, NotifyType } from "./ClientProfile";
-import { ServerData } from "./ServerData";
+import { Messenger } from "./Messenger";
+import { ServerBase, ServerData } from "./ServerData";
 import { sendDM } from "./Utils";
 
 /**
@@ -15,11 +16,8 @@ export class Updater {
     stopped = false;
     everOnline = false;
 
-    public constructor(data: ServerData) {
+    public constructor(data: ServerBase) {
         const args = data.ip.split(":");
-        if (args.length !== 2) {
-            console.warn("No port defined for %s.", data.name);
-        }
         this.ip = args[0];
         this.port = args.length !== 2 ? undefined : parseInt(args[1]);
         this.data = new ServerData(data);
@@ -57,10 +55,10 @@ export class Updater {
                 }
                 this.data.ping = state.ping;
                 this.data.players = players;
-                if (players.length && !this.data.getAdmins() && getMessenger(this.data.guild).getServerData(this.data)?.getAdmins())
+                if (players.length && !this.data.getAdmins() && (getMessenger(this.data.guild) ?? new Messenger([])).getServerData(this.data)?.getAdmins())
                     this.notifs.set(NotifyType.ADMIN, undefined);
                 getMessenger(this.data.guild)?.update(this.data);
-                const newData = getMessenger(this.data.guild).getServerData(this.data);
+                const newData = (getMessenger(this.data.guild) ?? new Messenger([])).getServerData(this.data);
                 if (this.everOnline) {
                     if (newData?.joined)
                         for (const p of newData.joined) {
@@ -170,7 +168,7 @@ export class Updater {
                 let message = "";
                 switch (option.type) {
                     case NotifyType.ADMIN:
-                        message = "**" + this.data.name + "** has `0` admins but `" + this.data.getOnline() + "` players online.";
+                        message = "**" + this.data.name + "** has `" + this.data.getOnline() + "` player" + (this.data.getOnline() === 1 ? "" : "s") + " but no admins online.";
                         break;
                     case NotifyType.MAP:
                         if (!this.matches(option.value, value as string))
@@ -191,7 +189,7 @@ export class Updater {
                         message = "**" + this.data.name + "** has updated.";
                         break;
                     default:
-                        message = "You seem to have a broken notification setup.";
+                        profile.options = profile.options.filter(opt => opt !== option);
                         break;
                 }
                 if (!message)

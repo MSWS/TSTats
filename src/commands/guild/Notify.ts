@@ -1,9 +1,9 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { APIMessage } from "discord-api-types";
-import { CommandInteraction, InteractionReplyOptions, Message, MessageEmbed, MessagePayload } from "discord.js";
-import { client, getClientProfile, selectData } from "../..";
+import { CommandInteraction, MessageEmbed } from "discord.js";
+import { client, config, getClientProfile, selectData } from "../..";
 import { ClientOption, ClientProfile, getSummary, NotifyType } from "../../ClientProfile";
 import { ServerData } from "../../ServerData";
+import { respond } from "../../Utils";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("notify")
@@ -16,17 +16,17 @@ module.exports = {
     async execute(interaction: CommandInteraction) {
         const sn = interaction.options.getString("server");
         if (!sn) {
-            await interaction.reply({ content: "Invalid server.", ephemeral: true });
+            interaction.reply({ content: "Invalid server.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         if (!interaction.guildId || !interaction.inGuild()) {
-            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
+            interaction.reply({ content: "This must be used in a guild.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
 
         const type = interaction.options.getString("type");
         if (!type) {
-            await interaction.reply({ content: "Unknown type.", ephemeral: true });
+            interaction.reply({ content: "Unknown type.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
 
@@ -35,7 +35,7 @@ module.exports = {
         const value = interaction.options.getString("value");
 
         if (!profile) {
-            interaction.reply({ content: "Unable to fetch profile.", ephemeral: true });
+            interaction.reply({ content: "Unable to fetch profile.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
 
@@ -44,7 +44,7 @@ module.exports = {
             server = await selectData(interaction.guildId, sn, interaction);
 
             if (!server) {
-                respond(interaction, { content: "Unknown server.", ephemeral: true });
+                respond(interaction, { content: "Unknown server.", ephemeral: config.ephemeralize.commands.onFail });
                 return;
             }
         }
@@ -57,35 +57,27 @@ module.exports = {
                 embeds = getEmbed(profile, interaction.guildId, server ? server.name : undefined);
             }
             if (!embeds || !embeds.length) {
-                if (interaction.replied)
-                    interaction.followUp({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
-                else
-                    interaction.reply({ content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: true });
-
+                respond(interaction, { content: "You do not have any " + (value ? getSummary(type as NotifyType) + " " : "") + "notifications for " + (server ? server.name : "any server") + ".", ephemeral: config.ephemeralize.notify.list });
                 return;
             }
 
             while (embeds.length) {
-                if (interaction.replied)
-                    interaction.followUp({ embeds: embeds.slice(0, Math.min(embeds.length, 10)), ephemeral: true });
-                else
-                    interaction.reply({ embeds: embeds.slice(0, Math.min(embeds.length, 10)), ephemeral: true });
+                respond(interaction, { embeds: embeds.slice(0, Math.min(embeds.length, 10)), ephemeral: config.ephemeralize.notify.list });
                 embeds = embeds.slice(Math.min(embeds.length, 10), embeds.length);
             }
-
 
             return;
         }
 
         if (!server) {
-            respond(interaction, { content: "Unknown server.", ephemeral: true });
+            respond(interaction, { content: "Unknown server.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
 
         if (type === "CLEAR") {
             if (profile?.options)
                 profile.options = profile?.options.filter(opt => opt.server !== server?.name);
-            respond(interaction, { content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: true });
+            respond(interaction, { content: "Successfully cleared your notification preferences for " + server.name + ".", ephemeral: config.ephemeralize.notify.clear });
             profile?.save();
             return;
         }
@@ -95,7 +87,7 @@ module.exports = {
         if (value === "CLEAR") {
             if (profile.options)
                 profile.options = profile.options.filter(opt => opt.server !== server?.name || opt.type !== type);
-            respond(interaction, { content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: true });
+            respond(interaction, { content: "Successfully cleared your " + type + " preferences for " + getSummary(opt.type) + ".", ephemeral: config.ephemeralize.notify.clear });
             profile?.save();
             return;
         }
@@ -105,22 +97,15 @@ module.exports = {
             return;
         }
         if (profile.options.some(e => e.guild === opt.guild && e.server === opt.server && e.type === opt.type && e.value === opt.value)) {
-            respond(interaction, { content: "You are already being notified about that.", ephemeral: true });
+            respond(interaction, { content: "You are already being notified about that.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
 
         profile.options.push(opt);
         profile.save();
-        respond(interaction, { content: "You will now be notified " + opt.getDescription(), ephemeral: true });
+        respond(interaction, { content: "You will now be notified " + opt.getDescription(), ephemeral: config.ephemeralize.notify.add });
     },
 };
-
-function respond(interaction: CommandInteraction, options: string | InteractionReplyOptions | MessagePayload): Promise<Message | APIMessage | void> {
-    if (interaction.replied)
-        return interaction.followUp(options);
-    else
-        return interaction.reply(options);
-}
 
 function getEmbed(profile: ClientProfile, guild?: string, server?: string, type?: NotifyType): MessageEmbed[] {
     const result = [];

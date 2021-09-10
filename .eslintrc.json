@@ -31,6 +31,7 @@
         "no-duplicate-case": "error",
         "camelcase": "warn",
         "eqeqeq": "warn",
-        "no-await-in-loop": "warn"
+        "no-await-in-loop": "warn",
+        "no-case-declarations": "warn"
     }
 }

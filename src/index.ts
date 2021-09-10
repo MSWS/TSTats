@@ -16,16 +16,72 @@ fs.mkdir(path.resolve(__dirname, "./configs"), (e) => { if (e?.errno !== -17) co
 
 export const clientProfiles = new Map<string, ClientProfile>();
 
+export const GAME_TYPES: [string, string][] = [["7 Days to Die (2013)", "7d2d"],
+["Ark: Survival Evolved (2017)", "arkse"],
+["ARMA 3 (2013)", "arma3"],
+["Battlefield: Bad Company 2 (2010)", "bfbc2"],
+["Call of Duty: Modern Warfare 3 (2011)", "codmw3"],
+["Counter-Strike: Global Offensive (2012)", "csgo"],
+["Counter-Strike: Source (2004)", "css"],
+["DayZ (2018)", "dayz"],
+["Deus Ex (2000)", "deusex"],
+["Doom 3 (2004)", "doom3"],
+["Dota 2 (2013)", "dota2"],
+["Garry's Mod (2004)", "garrysmod"],
+["Grand Theft Auto V - FiveM (2013)", "fivem"],
+["Minecraft (2009)", "minecraft"],
+["Minecraft Bedrock", "minecraftpe"],
+["Mordhau (2019)", "mordhau"],
+["Rainbow Six", "r6"],
+["Space Engineers", "spaceengineers"],
+["Team Fortress 2", "tf2"],
+["Teamspeak 3", "teamspeak3"],
+["Terraria - TShock (2011)", "terraria"]];
+
+export const VALID_COLORS: [string, string][] = [["White", "WHITE"],
+["Aqua", "AQUA"],
+["Green", "GREEN"],
+["Blue", "BLUE"],
+["Yellow", "YELLOW"],
+["Purple", "PURPLE"],
+["Luminous Vivid Pink", "LUMINOUS_VIVID_PINK"],
+["Fuchsia", "FUCHSIA"],
+["Gold", "GOLD"],
+["Orange", "ORANGE"],
+["Red", "RED"],
+["Grey", "GREY"],
+["Navy", "NAVY"],
+["Dark Aqua", "DARK_AQUA"],
+["Dark Green", "DARK_GREEN"],
+["Dark Blue", "DARK_BLUE"],
+["Dark Purple", "DARK_PURPLE"],
+["Dark Vivid Pink", "DARK_VIVID_PINK"],
+["Dark Gold", "DARK_GOLD"],
+["Dark Orange", "DARK_ORANGE"],
+["Dark Red", "DARK_RED"],
+["Light Grey", "LIGHT_GREY"],
+["Dark Navy", "DARK_NAVY"],
+["Blurple", "BLURPLE"],
+["Random", "RANDOM"]];
+
 interface Command {
   data: { toJSON: () => string, name: string },
   execute: (interaction: Interaction) => void
 }
 
 const commands = new Map<string, Command>(); // Map for execution
-const guildCommands: Command[] = []; // Array for registrating commands
+const guildCommands: Command[] = []; // Array for registering commands
 const globalCommands: Command[] = [];
 
-export let config: { token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number, useServerName: boolean, lineLength: number, cacheRate: number, build: number };
+export let config: {
+  token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number,
+  useServerName: boolean, lineLength: number, cacheRate: number, build: number, addServerPermission: string, elevatedPermission: string,
+  ephemeralize: {
+    commands: { onComplete: boolean, onFail: boolean }, ping: boolean, purge: boolean, restart: boolean,
+    stats: { global: boolean, guild: boolean }, version: boolean, addserver: boolean, deleteserver: boolean, giveaccess: boolean,
+    notify: { list: boolean, clear: boolean, add: boolean }, revokeaccess: boolean, servers: boolean, editserver: boolean
+  }
+};
 export const generator = new EmbedGenerator();
 export let client: Client;
 export const version = "1.0.1";
@@ -38,12 +94,10 @@ const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
 const updateMap = new Map<string, Updater>();
 
-import(path.resolve(__dirname, "./config.json")).then(c => {
-  config = c;
-  init();
-});
+init();
 
-export function init(): void {
+export async function init(): Promise<void> {
+  config = await import(path.resolve(__dirname, "./config.json"));
   client = new Client({
     allowedMentions: { parse: ['users', 'roles'], repliedUser: true },
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, /*Intents.FLAGS.DIRECT_MESSAGES*/], /*partials: ["CHANNEL"] */
@@ -60,16 +114,16 @@ export function init(): void {
     start = Date.now();
     let serverCount = getServers().length;
 
-    for (const server of getServers()) {
-      const update = new Updater(server);
-      update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
-      addUpdater(update.data.guild, update.data.name, update);
+    for (const [guild, data] of guilds.entries()) {
+      const msg = getMessenger(guild) ?? new Messenger(data);
+      setMessenger(guild, msg);
+      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
     }
 
-    for (const [guild, data] of guilds.entries()) {
-      const msg = new Messenger(data);
-      messengerMap.set(guild, msg);
-      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
+    for (const server of getServers()) {
+      const update = getUpdater(server.guild, server.name) ?? new Updater(server);
+      update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
+      addUpdater(update.data.guild, update.data.name, update);
     }
 
     setInterval(() => {
@@ -91,6 +145,8 @@ export function init(): void {
 
     if (!command)
       return;
+
+    console.log(interaction.user.username + "#" + interaction.user.discriminator + " (" + interaction.user.id + ") executed command " + JSON.stringify(interaction.options.data.filter(d => d.value)) + ".");
 
     try {
       command.execute(interaction);
@@ -115,8 +171,8 @@ export function restart(): void {
   messengerMap.clear();
 
   client.destroy();
-  // init();
-  process.exit();
+  init();
+  // process.exit();
 }
 
 /**
@@ -334,13 +390,13 @@ export function getData(guild: string, name: string, strict = false): ServerData
   return undefined;
 }
 
-export async function selectData(guild: string, name: string, interaction: CommandInteraction, mustSee = true): Promise<Promise<ServerData> | undefined> {
+export async function selectData(guild: string, name: string | undefined, interaction: CommandInteraction, mustSee = true): Promise<Promise<ServerData> | undefined> {
   const possible = [];
   const g = client.guilds.cache.get(guild);
   for (const data of getGuildServers(guild)) {
-    if (data.name.toLowerCase() === name.toLowerCase())
+    if (name && data.name.toLowerCase() === name.toLowerCase())
       return data;
-    if (similarity(name, data.name) === 0)
+    if (name && similarity(name, data.name) === 0)
       continue;
     if (mustSee) {
       const channel = g?.channels.cache.get(data.channel);
@@ -354,7 +410,8 @@ export async function selectData(guild: string, name: string, interaction: Comma
     return undefined;
   if (possible.length === 1)
     return possible[0];
-  possible.sort((a, b) => similarity(name, b.name) - similarity(name, a.name));
+  if (name)
+    possible.sort((a, b) => similarity(name, b.name) - similarity(name, a.name));
   possible.length = Math.min(possible.length, 5);
   const options: MessageSelectOptionData[] = [];
 
@@ -421,14 +478,12 @@ function editDistance(s1: string, s2: string) {
  * @param guild Guild whose messenger to fetch
  * @returns The guild's messenger. If none exists, a new one is creeated and initizlied, and then returned.
  */
-export function getMessenger(guild: string): Messenger {
-  let messenger = messengerMap.get(guild);
-  if (!messenger) {
-    messenger = new Messenger([]);
-    messenger.start(config.discordDelay * 1000, config.discordRate * 1000);
-    messengerMap.set(guild, messenger);
-  }
-  return messenger;
+export function getMessenger(guild: string): Messenger | undefined {
+  return messengerMap.get(guild);
+}
+
+export function setMessenger(guild: string, messenger: Messenger): void {
+  messengerMap.set(guild, messenger);
 }
 
 /**

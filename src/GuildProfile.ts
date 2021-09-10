@@ -28,11 +28,13 @@ export class GuildProfile {
             for (const s of servers) {
                 const serverData = new ServerData(s);
                 serverData.guild = this.id;
+                if (this.servers.some(s => s.name === serverData.name)) {
+                    console.warn("Prevented duplicate addition of " + serverData.name);
+                    continue;
+                }
                 this.servers.push(serverData);
             }
         });
-
-
     }
 
     save(): void {

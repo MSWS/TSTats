@@ -1,9 +1,10 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
-import { APIMessage } from "discord-api-types";
-import { CommandInteraction, InteractionReplyOptions, Message, MessageEmbed, MessagePayload } from "discord.js";
-import { getGuildProfile, getMessenger, removeUpdater, selectData } from "../..";
+import { CommandInteraction, MessageEmbed } from "discord.js";
+import { clientProfiles, config, getGuildProfile, getMessenger, getUpdater, removeUpdater, selectData } from "../..";
+import { Messenger } from "../../Messenger";
 import { ServerData } from "../../ServerData";
+import { respond } from "../../Utils";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("deleteserver")
@@ -13,21 +14,26 @@ module.exports = {
     async execute(interaction: CommandInteraction) {
         const name = interaction.options.getString("name");
         if (!name) {
-            await interaction.reply({ content: "You must specify the name of the server.", ephemeral: true });
+            interaction.reply({ content: "You must specify the name of the server.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         if (!interaction.guildId || !interaction.inGuild()) {
-            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
+            interaction.reply({ content: "This must be used in a guild.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         const server = await selectData(interaction.guildId, name, interaction);
         if (!server) {
-            respond(interaction, { content: "Unknown server specified.", ephemeral: true });
+            respond(interaction, { content: "Unknown server specified.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
-        const profile = getGuildProfile(interaction.guildId);
-        profile.servers = profile.servers.filter((data: ServerData) => data.name !== server.name);
-        profile.save();
+        const guildProfile = getGuildProfile(interaction.guildId);
+        guildProfile.servers = guildProfile.servers.filter((data: ServerData) => data.name !== server.name);
+        guildProfile.save();
+
+        for (const profile of clientProfiles.values()) {
+            profile.options = profile.options.filter(opt => opt.guild !== server.guild || opt.server !== server.name);
+        }
+
         const embed = new MessageEmbed();
 
         embed.setTitle("Success");
@@ -35,17 +41,14 @@ module.exports = {
         const url = interaction.user.avatarURL();
         embed.setFooter("Called by " + interaction.user.username + "#" + interaction.user.discriminator, url ? url : undefined);
 
-        getMessenger(interaction.guildId).remove(server);
+        const msg = getMessenger(interaction.guildId) ?? new Messenger([]);
+        msg.remove(server);
+
+        const updater = getUpdater(interaction.guildId, server.name);
+        updater?.stop();
         removeUpdater(interaction.guildId, server.name);
 
         embed.setColor("RED");
-        await interaction.reply({ embeds: [embed] });
+        respond(interaction, { embeds: [embed], ephemeral: config.ephemeralize.deleteserver });
     },
 };
-
-function respond(interaction: CommandInteraction, options: string | InteractionReplyOptions | MessagePayload): Promise<Message | APIMessage | void> {
-    if (interaction.replied)
-        return interaction.followUp(options);
-    else
-        return interaction.reply(options);
-}

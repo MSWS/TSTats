@@ -8,5 +8,32 @@
     "useServerName": true,
     "lineLength": 60,
     "cacheRate": 5,
+    "addServerPermission": "MANAGE_CHANNELS",
+    "elevatedPermission": "MANAGE_GUILD",
+    "ephemeralize": {
+        "commands": {
+            "onComplete": false,
+            "onFail": true
+        },
+        "ping": false,
+        "purge": true,
+        "restart": false,
+        "stats": {
+            "global": false,
+            "guild": false
+        },
+        "version": false,
+        "addserver": false,
+        "deleteserver": false,
+        "giveaccess": false,
+        "notify": {
+            "list": true,
+            "clear": false,
+            "add": false
+        },
+        "revokeaccess": false,
+        "servers": true,
+        "editserver": false
+    },
     "build": 0
 }

@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, SlashCommandRoleOption } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
-import { getGuildProfile, updatePermissions } from "../..";
+import { config, getGuildProfile, updatePermissions } from "../..";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("giveaccess")
@@ -9,31 +9,30 @@ module.exports = {
         .setDefaultPermission(false),
     async execute(interaction: CommandInteraction) {
         if (!interaction.guildId || !interaction.inGuild()) {
-            await interaction.reply({ content: "This must be used in a guild.", ephemeral: true });
+            interaction.reply({ content: "This must be used in a guild.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         if (!interaction.channel) {
-            await interaction.reply({ content: "Unable to fetch channel, please try again later.", ephemeral: true });
+            interaction.reply({ content: "Unable to fetch channel, please try again later.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         if (!interaction.guild?.channels.cache.get(interaction.channel.id)?.permissionsFor(interaction.user)?.has("MANAGE_GUILD")) {
-            await interaction.reply({ content: "You require the `MANAGE_GUILD` permission to use this command.", ephemeral: true });
+            interaction.reply({ content: "You require the `MANAGE_GUILD` permission to use this command.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         const role = interaction.options.getRole("role");
         if (!role) {
-            await interaction.reply({ content: "Unknown role.", ephemeral: true });
+            interaction.reply({ content: "Unknown role.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         const profile = getGuildProfile(interaction.guildId);
         if (profile.elevated.includes(role.id)) {
-            await interaction.reply({ content: "<@&" + role.id + "> already has access to elevated commands.", ephemeral: true });
+            interaction.reply({ content: "<@&" + role.id + "> already has access to elevated commands.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         profile.elevated.push(role.id);
         profile.save();
         updatePermissions(interaction.guildId);
-        await interaction.reply("Successfully allowed <@&" + role.id + "> access to elevated commands.");
-        return;
+        interaction.reply({ content: "Successfully allowed <@&" + role.id + "> access to elevated commands.", ephemeral: config.ephemeralize.giveaccess });
     },
 };
