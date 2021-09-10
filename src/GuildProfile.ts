@@ -34,6 +34,9 @@ export class GuildProfile {
                 }
                 this.servers.push(serverData);
             }
+        }).catch((e) => {
+            console.error("Guild config " + this.id + " is likely corrupted.");
+            console.error(e);
         });
     }
 

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
 import { SlashCommandStringOption } from "@discordjs/builders/dist/interactions/slashCommands/options/string";
 import { CommandInteraction, GuildChannel, MessageEmbed, PermissionString } from "discord.js";
-import { addUpdater, config, GAME_TYPES, getData, getGuildProfile, getMessenger, setMessenger, VALID_COLORS } from "../..";
+import { addUpdater, client, config, GAME_TYPES, getData, getGuildProfile, getMessenger, setMessenger, VALID_COLORS } from "../..";
 import { Messenger } from "../../Messenger";
 import { ServerData } from "../../ServerData";
 import { Updater } from "../../Updater";
@@ -38,6 +38,17 @@ module.exports = {
             respond(interaction, { content: "You require the `" + config.addServerPermission + "` permission for <#" + channel.id + ">.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
+
+        if (!client.user)
+            return;
+        let me = interaction.guild.members.cache.get(client.user.id);
+        if (!me)
+            me = await interaction.guild.members.fetch({ user: client.user.id });
+        if (!interaction.guild.channels.cache.get(channel.id)?.permissionsFor(me)?.has("SEND_MESSAGES")) {
+            respond(interaction, { content: "I do not have permission to manage messages in <#" + channel.id + ">.", ephemeral: config.ephemeralize.commands.onFail });
+            return;
+        }
+
         const name = interaction.options.getString("name");
 
         if (!name) {

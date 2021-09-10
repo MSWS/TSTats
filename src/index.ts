@@ -159,6 +159,21 @@ export async function init(): Promise<void> {
     }
   });
 
+  client.on("guildCreate", async interaction => {
+    registerCommands(interaction.id);
+  });
+
+  client.on("error", error => {
+    console.error("An error occured: ", error);
+  });
+
+  process.on('uncaughtException', error => {
+    console.error('A process exception occured:', error);
+  });
+  process.on('unhandledRejection', error => {
+    console.error('A rejection went unhandled:', error);
+  });
+
   client.login(config.token);
 }
 
