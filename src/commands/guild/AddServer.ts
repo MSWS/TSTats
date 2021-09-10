@@ -12,7 +12,7 @@ module.exports = {
         .setDescription("Adds a server to the bot")
         .addStringOption((option: SlashCommandStringOption) => option.setName("name").setDescription("The name of the server").setRequired(true))
         .addStringOption((option: SlashCommandStringOption) => option.setName("ip").setDescription("The IP of the server").setRequired(true))
-        .addStringOption((option: SlashCommandStringOption) => option.setName("type").setDescription("The type of game").addChoices(GAME_TYPES).setRequired(true))
+        .addStringOption((option: SlashCommandStringOption) => option.setName("type").setDescription("The type of game").addChoices(GAME_TYPES).setRequired(false))
         .addChannelOption((option: SlashCommandChannelOption) => option.setName("channel").setDescription("The channel to log server status to").setRequired(false))
         .addStringOption((option: SlashCommandStringOption) => option.setName("image").setDescription("Graph link if available").setRequired(false))
         .addStringOption((option: SlashCommandStringOption) => option.setName("color").setDescription("Hex color if desired").setRequired(false).addChoices(VALID_COLORS))
