@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, SlashCommandRoleOption } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
-import { config, getGuildProfile, updatePermissions } from "../..";
+import { config, getGuildProfile } from "../..";
+import { updatePermissions } from "../../CommandManager";
 
 module.exports = {
     data: new SlashCommandBuilder().setName("giveaccess")

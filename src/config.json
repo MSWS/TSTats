@@ -4,7 +4,7 @@
     "sourceRate": 60,
     "discordDelay": 3,
     "sourceDelay": 0,
-    "topicRate": 300,
+    "presenceRate": 60,
     "useServerName": true,
     "lineLength": 60,
     "cacheRate": 5,

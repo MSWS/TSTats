@@ -1,6 +1,5 @@
 import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
-import { ApplicationCommandPermissionData, Client, CommandInteraction, Intents, Interaction, MessageActionRow, MessageSelectMenu, MessageSelectOptionData, SelectMenuInteraction } from "discord.js";
+import { Client, CommandInteraction, Intents, MessageActionRow, MessageSelectMenu, MessageSelectOptionData, SelectMenuInteraction } from "discord.js";
 import { ClientProfile } from "./ClientProfile";
 import { EmbedGenerator } from "./Generator";
 import { GuildProfile } from "./GuildProfile";
@@ -9,6 +8,7 @@ import { ServerData } from "./ServerData";
 import { Updater } from "./Updater";
 import fs = require('fs');
 import path = require("path");
+import { loadCommands, registerCommands } from './CommandManager';
 
 // Create the directories before we fetch them
 fs.mkdir(path.resolve(__dirname, "./profiles"), (e) => { if (e?.errno !== -17) console.error("Unable to make profiles directory: ", e); });
@@ -64,17 +64,8 @@ export const VALID_COLORS: [string, string][] = [["White", "WHITE"],
 ["Blurple", "BLURPLE"],
 ["Random", "RANDOM"]];
 
-interface Command {
-  data: { toJSON: () => string, name: string },
-  execute: (interaction: Interaction) => void
-}
-
-const commands = new Map<string, Command>(); // Map for execution
-const guildCommands: Command[] = []; // Array for registering commands
-const globalCommands: Command[] = [];
-
 export let config: {
-  token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number,
+  token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, presenceRate: number,
   useServerName: boolean, lineLength: number, cacheRate: number, build: number, addServerPermission: string, elevatedPermission: string,
   ephemeralize: {
     commands: { onComplete: boolean, onFail: boolean }, ping: boolean, purge: boolean, restart: boolean,
@@ -89,7 +80,7 @@ export const version = "1.0.1";
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
 
-let rest: REST;
+export let rest: REST;
 const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
 const updateMap = new Map<string, Updater>();
@@ -135,32 +126,25 @@ export async function init(): Promise<void> {
           name: count + " player" + (count === 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount === 1 ? "" : "s"), type: "WATCHING"
         }]
       });
-    }, (config.topicRate ? config.topicRate : 300) * 1000);
-  });
-
-  client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
-
-    const command: Command | undefined = commands.get(interaction.commandName);
-
-    if (!command)
-      return;
-
-    console.log(interaction.user.username + "#" + interaction.user.discriminator + " (" + interaction.user.id + ") executed command " + JSON.stringify(interaction.options.data.filter(d => d.value)) + ".");
-
-    try {
-      command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      if (interaction.replied)
-        interaction.followUp({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
-      else
-        interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
-    }
+    }, (config.presenceRate ?? 60) * 1000);
   });
 
   client.on("guildCreate", async interaction => {
     registerCommands(interaction.id);
+  });
+
+  client.on("guildDelete", async guild => {
+    getMessenger(guild.id)?.stop();
+
+    const profile = getGuildProfile(guild.id);
+
+    for (const server of profile.servers) {
+      getUpdater(guild.id, server.name)?.stop();
+      removeUpdater(guild.id, server.name);
+    }
+    fs.unlink(profile.file, (e) => {
+      if (e) console.error("Could not delete file: ", e);
+    });
   });
 
   client.on("error", error => {
@@ -279,104 +263,6 @@ function loadClientProfiles() {
     profile.load();
     clientProfiles.set(id, profile);
   }
-}
-
-/**
- * Loads and populates both the commands map (for execution) and commandArray (for registration).
- */
-function loadCommands() {
-  const guildCommandFiles = fs.readdirSync(path.resolve(__dirname, './commands/guild')).filter((file: string) => file.endsWith('.js'));
-  const globalCommandFiles = fs.readdirSync(path.resolve(__dirname, './commands/global')).filter((file: string) => file.endsWith('.js'));
-  commands.clear();
-  guildCommands.length = 0;
-  globalCommands.length = 0;
-
-  for (const file of guildCommandFiles) {
-    import(`./commands/guild/${file}`).then(command => {
-      commands.set(command.data.name, command);
-      guildCommands.push(command.data.toJSON());
-    });
-
-  }
-  for (const file of globalCommandFiles) {
-    import(`./commands/global/${file}`).then(command => {
-      commands.set(command.data.name, command);
-      globalCommands.push(command.data.toJSON());
-    });
-  }
-}
-
-
-/**
- * Registers commands and updates the permissions via updatePermissions.
- * @param guildId The guild to update commands for, if not specified, updates all guild's commands
- */
-export function registerCommands(guildId?: string): void {
-  (async () => {
-    const id = client.user?.id;
-    if (!id)
-      throw "No client ID found";
-    if (!guildId) {
-      // let app = await client.application?.fetch();
-      // if (app) {
-      //   for (let cmd of (await app.commands.fetch()).values()) {
-      //     if (globalCommands.some(c => cmd.name == c.name))
-      //       continue;
-      //     console.log("Deleting " + JSON.stringify(cmd));
-      //     cmd.delete();
-      //   }
-      // }
-      for (const guild of await client.guilds.fetch()) {
-        registerCommands(guild[0]);
-      }
-      // rest.put(Routes.applicationCommands(config.clientId), { body: globalCommands });
-      return;
-    }
-    const guild = client.guilds.fetch(guildId);
-    const gCommands = await (await guild).commands.fetch();
-    for (const cmd of gCommands) {
-      if (commands.has(cmd[1].name))
-        continue;
-      cmd[1].delete();
-    }
-
-    rest.put(Routes.applicationGuildCommands(id, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId) });
-  })();
-}
-
-/**
- * Updates the specified guild's command permissions. By default, the highest role has access to all commands. Any role that has access to manage the guild also has access to all commands.
- * @param guildId The guild to update permissions for, if not specified, updates all guild's permissions
- */
-export function updatePermissions(guildId?: string): void {
-  (async () => {
-    if (!guildId) {
-      for (const guild of await client.guilds.fetch()) {
-        updatePermissions(guild[0]);
-      }
-      return;
-    }
-    const guild = await client.guilds.fetch(guildId);
-    const serverPerm: ApplicationCommandPermissionData[] = [{
-      id: guild.roles.highest.id,
-      permission: true,
-      type: "ROLE"
-    }];
-    const roles = await guild.roles.fetch();
-    for (const role of roles) {
-      if (!role[1].permissions.has("MANAGE_GUILD") && !getGuildProfile(guild.id).elevated.includes(role[0]))
-        continue;
-      serverPerm.push({
-        id: role[0],
-        permission: true,
-        type: "ROLE"
-      });
-    }
-    const commands = guild.commands.fetch();
-    for (const cmd of await commands) {
-      cmd[1].permissions.set({ permissions: serverPerm });
-    }
-  })();
 }
 
 /**
