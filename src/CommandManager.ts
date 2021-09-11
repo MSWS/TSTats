@@ -1,14 +1,13 @@
+import { SlashCommandBuilder } from '@discordjs/builders';
 import { Routes } from 'discord-api-types/v9';
-import { ApplicationCommandPermissionData, Interaction } from "discord.js";
+import { ApplicationCommandPermissionData, CommandInteractionOption, Interaction } from "discord.js";
 import { client, getGuildProfile, rest } from ".";
 import fs = require('fs');
 import path = require("path");
-import { SlashCommandBuilder } from '@discordjs/builders';
 
 const commands = new Map<string, Command>(); // Map for execution
 const guildCommands: Command[] = []; // Array for registering commands
 const globalCommands: Command[] = [];
-const registered: string[] = [];
 
 export interface Command {
     data: SlashCommandBuilder,
@@ -76,7 +75,7 @@ export function registerCommands(guildId?: string): void {
                 if (!command)
                     return;
 
-                console.log(interaction.user.username + "#" + interaction.user.discriminator + " (" + interaction.user.id + ") executed command " + interaction.commandName + " " + JSON.stringify(interaction.options.data.filter(d => d.value)) + ".");
+                console.log(interaction.user.username + "#" + interaction.user.discriminator + " (" + interaction.user.id + ") executed command /" + interaction.commandName + " " + interaction.options.data.map(opt => opt.name + ":" + toString(opt)).join(" ") + "");
 
                 try {
                     command.execute(interaction);
@@ -100,6 +99,23 @@ export function registerCommands(guildId?: string): void {
 
         rest.put(Routes.applicationGuildCommands(id, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId) });
     })();
+}
+
+function toString(opt: CommandInteractionOption): string {
+    switch (opt.type) {
+        case 'BOOLEAN':
+        case "STRING":
+        case "INTEGER":
+            return opt.value?.toString() + "";
+        case "CHANNEL":
+            return opt.channel?.name.toString() + "";
+        case "MENTIONABLE":
+        case "USER":
+        case "ROLE":
+            return (opt.member ?? opt.role?.name)?.toString() + "";
+        default:
+            return opt + "";
+    }
 }
 
 /**

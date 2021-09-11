@@ -221,7 +221,8 @@ export class Updater {
                                     return;
                                 profile.options.push(option);
                             }, minutes * 60 * 1000);
-                            await click.update({ content: "Successfully snoozed notifications for " + option.getDescription(), components: [unsnoozeRow] });
+                            const time = Math.round(Date.now() / 1000 + minutes * 60);
+                            await click.update({ content: "Successfully snoozed notifications " + option.getDescription() + " They will be re-enabled <t:" + time + ":R>.", components: [unsnoozeRow] });
                         } else if (click.customId === snoozeId) {
                             if (!profile.options.includes(option)) {
                                 await click.followUp({ content: "You have alredy stopped these notifications.", ephemeral: true });
