@@ -99,71 +99,72 @@ export class Updater {
         }
     }
 
+
+
+
     notify(): void {
-        const stopId = Math.random() + "", snoozeId = Math.random() + "", selectId = Math.random() + "", unsnoozeId = Math.random() + "", deleteId = Math.random() + "", infoId = Math.random() + "";
-        const editId = Math.random() + "", collapseId = Math.random() + "";
-
-        const editRow = new MessageActionRow().addComponents(
-            new MessageButton().setCustomId(editId)
-                .setLabel("").setEmoji("▶️").setStyle("SECONDARY")
-        );
-        const primaryRow = new MessageActionRow().addComponents(
-            new MessageButton().setCustomId(deleteId)
-                .setLabel("Delete").setStyle("SUCCESS").setEmoji("🗑️"),
-            new MessageButton().setCustomId(snoozeId)
-                .setLabel("Snooze").setStyle("PRIMARY").setEmoji("💤"),
-            new MessageButton().setCustomId(stopId)
-                .setLabel("Stop").setStyle("DANGER").setEmoji("🛑"),
-            new MessageButton().setCustomId(infoId)
-                .setLabel("Info").setStyle("SECONDARY").setEmoji("📖"),
-            new MessageButton().setCustomId(collapseId)
-                .setLabel("").setStyle("SECONDARY").setEmoji("◀️")
-        );
-        const resumeId = Math.random() + "";
-        const resume = new MessageActionRow().addComponents(
-            new MessageButton().setCustomId(deleteId)
-                .setLabel("Delete").setStyle("SUCCESS").setEmoji("🗑️"),
-            new MessageButton().setCustomId(resumeId)
-                .setLabel("Resume").setStyle("PRIMARY").setEmoji("✅"));
-        const unsnoozeRow = new MessageActionRow().addComponents(
-            new MessageButton().setCustomId(unsnoozeId)
-                .setLabel("Unsnooze").setStyle("PRIMARY").setEmoji("⏰"));
-
-        const selectRow = new MessageActionRow().addComponents(new MessageSelectMenu().setCustomId(selectId).setPlaceholder("Snooze Duration")
-            .addOptions([{
-                label: "5 Minutes",
-                description: "Snooze this notification for 5 minutes",
-                value: "5"
-            }, {
-                label: "10 Minutes",
-                description: "Snooze this notification for 10 minutes",
-                value: "10"
-            }, {
-                label: "30 Minutes",
-                description: "Snooze this notification for 30 minutes",
-                value: "30"
-            }, {
-                label: "1 Hour",
-                description: "Snooze this notification for 1 hour",
-                value: "60"
-            }, {
-                label: "3 Hours",
-                "description": "Snooze this notification for 3 hours",
-                value: "180"
-            }, {
-                label: "12 Hours",
-                "description": "Snooze this notification for 12 hours",
-                value: "720"
-            }, {
-                label: "1 Day",
-                "description": "Snooze this notification for 1 day",
-                value: "1440"
-            }
-            ]));
-
-
         for (const profile of clientProfiles.values()) {
             for (const option of profile.options.filter(o => o.guild === this.data.guild && o.server === this.data.name && this.notifs.has(o.type))) {
+                const stopId = Math.random() + "", snoozeId = Math.random() + "", selectId = Math.random() + "", unsnoozeId = Math.random() + "", deleteId = Math.random() + "", infoId = Math.random() + "";
+                const editId = Math.random() + "", collapseId = Math.random() + "";
+
+                const editRow = new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(editId)
+                        .setLabel("").setEmoji("▶️").setStyle("SECONDARY")
+                );
+                const primaryRow = new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(deleteId)
+                        .setLabel("Delete").setStyle("SUCCESS").setEmoji("🗑️"),
+                    new MessageButton().setCustomId(snoozeId)
+                        .setLabel("Snooze").setStyle("PRIMARY").setEmoji("💤"),
+                    new MessageButton().setCustomId(stopId)
+                        .setLabel("Stop").setStyle("DANGER").setEmoji("🛑"),
+                    new MessageButton().setCustomId(infoId)
+                        .setLabel("Info").setStyle("SECONDARY").setEmoji("📖"),
+                    new MessageButton().setCustomId(collapseId)
+                        .setLabel("").setStyle("SECONDARY").setEmoji("◀️")
+                );
+                const resumeId = Math.random() + "";
+                const resume = new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(deleteId)
+                        .setLabel("Delete").setStyle("SUCCESS").setEmoji("🗑️"),
+                    new MessageButton().setCustomId(resumeId)
+                        .setLabel("Resume").setStyle("PRIMARY").setEmoji("✅"));
+                const unsnoozeRow = new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(unsnoozeId)
+                        .setLabel("Unsnooze").setStyle("PRIMARY").setEmoji("⏰"));
+                const selectRow = new MessageActionRow().addComponents(new MessageSelectMenu().setCustomId(selectId).setPlaceholder("Snooze Duration")
+                    .addOptions([{
+                        label: "5 Minutes",
+                        description: "Snooze this notification for 5 minutes",
+                        value: "5"
+                    }, {
+                        label: "10 Minutes",
+                        description: "Snooze this notification for 10 minutes",
+                        value: "10"
+                    }, {
+                        label: "30 Minutes",
+                        description: "Snooze this notification for 30 minutes",
+                        value: "30"
+                    }, {
+                        label: "1 Hour",
+                        description: "Snooze this notification for 1 hour",
+                        value: "60"
+                    }, {
+                        label: "3 Hours",
+                        "description": "Snooze this notification for 3 hours",
+                        value: "180"
+                    }, {
+                        label: "12 Hours",
+                        "description": "Snooze this notification for 12 hours",
+                        value: "720"
+                    }, {
+                        label: "1 Day",
+                        "description": "Snooze this notification for 1 day",
+                        value: "1440"
+                    }
+                    ]));
+
                 const value = this.notifs.get(option.type);
                 let message = "";
                 switch (option.type) {
