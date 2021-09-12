@@ -28,11 +28,16 @@ export class GuildProfile {
             for (const s of servers) {
                 const serverData = new ServerData(s);
                 serverData.guild = this.id;
+                if (this.servers.some(s => s.name === serverData.name)) {
+                    console.warn("Prevented duplicate addition of " + serverData.name);
+                    continue;
+                }
                 this.servers.push(serverData);
             }
+        }).catch((e) => {
+            console.error("Guild config " + this.id + " is likely corrupted.");
+            console.error(e);
         });
-
-
     }
 
     save(): void {

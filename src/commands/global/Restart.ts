@@ -8,6 +8,7 @@ module.exports = {
         .setDescription("Restarts the bot.")
         .setDefaultPermission(true),
     async execute(interaction: CommandInteraction) {
+        // MSWS
         if (interaction.user.id !== "219601562048135168") {
             interaction.reply({ content: "Sorry! Only my maker (<@219601562048135168>) can execute this.", ephemeral: true });
             return;
@@ -16,7 +17,7 @@ module.exports = {
         embed.setTitle("Restarting...");
         embed.setColor("DARK_RED");
         embed.setFooter("Build Version " + version + "." + config.build);
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.restart });
         restart();
     }
 };

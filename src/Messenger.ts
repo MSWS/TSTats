@@ -10,7 +10,7 @@ export class Messenger {
     stopped = false;
 
     public constructor(servers: ServerData[]) {
-        this.data = servers;
+        this.data = [...servers];
         for (const c of this.data) {
             this.purge(c.channel);
         }
@@ -81,7 +81,7 @@ export class Messenger {
     public update(data: ServerData): void {
         const dat = this.getServerData(data);
         if (!dat) {
-            console.warn("Attempted to save " + data.name + " to " + data.channel + " when we aren't responsible for it.");
+            console.warn("Attempted to send " + data.name + " to " + data.channel + " when we aren't responsible for it.");
             return;
         }
         dat.update(data);

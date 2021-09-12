@@ -1,53 +1,94 @@
-import { ApplicationCommandPermissionData, Client, Intents, Interaction } from "discord.js";
+import { REST } from '@discordjs/rest';
+import { Client, CommandInteraction, Intents, MessageActionRow, MessageSelectMenu, MessageSelectOptionData, SelectMenuInteraction } from "discord.js";
 import { ClientProfile } from "./ClientProfile";
 import { EmbedGenerator } from "./Generator";
 import { GuildProfile } from "./GuildProfile";
 import { Messenger } from "./Messenger";
 import { ServerData } from "./ServerData";
 import { Updater } from "./Updater";
-import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
 import fs = require('fs');
 import path = require("path");
+import { loadCommands, registerCommands } from './CommandManager';
 
 // Create the directories before we fetch them
-fs.mkdir(path.resolve(__dirname, "./profiles"), (e) => { if (e) console.error("Unable to make profiles directory: ", e); });
-fs.mkdir(path.resolve(__dirname, "./configs"), (e) => { if (e) console.error("Unable to make config directory: ", e); });
+fs.mkdir(path.resolve(__dirname, "./profiles"), (e) => { if (e?.errno !== -17) console.error("Unable to make profiles directory: ", e); });
+fs.mkdir(path.resolve(__dirname, "./configs"), (e) => { if (e?.errno !== -17) console.error("Unable to make configs directory: ", e); });
 
 export const clientProfiles = new Map<string, ClientProfile>();
 
-interface Command {
-  data: { toJSON: () => string, name: string },
-  execute: (interaction: Interaction) => void
-}
+export const GAME_TYPES: [string, string][] = [["7 Days to Die (2013)", "7d2d"],
+["Ark: Survival Evolved (2017)", "arkse"],
+["ARMA 3 (2013)", "arma3"],
+["Battlefield: Bad Company 2 (2010)", "bfbc2"],
+["Call of Duty: Modern Warfare 3 (2011)", "codmw3"],
+["Counter-Strike: Global Offensive (2012)", "csgo"],
+["Counter-Strike: Source (2004)", "css"],
+["DayZ (2018)", "dayz"],
+["Deus Ex (2000)", "deusex"],
+["Doom 3 (2004)", "doom3"],
+["Dota 2 (2013)", "dota2"],
+["Garry's Mod (2004)", "garrysmod"],
+["Grand Theft Auto V - FiveM (2013)", "fivem"],
+["Minecraft (2009)", "minecraft"],
+["Minecraft Bedrock", "minecraftpe"],
+["Mordhau (2019)", "mordhau"],
+["Rainbow Six", "r6"],
+["Space Engineers", "spaceengineers"],
+["Team Fortress 2", "tf2"],
+["Teamspeak 3", "teamspeak3"],
+["Terraria - TShock (2011)", "terraria"]];
 
-const commands = new Map<string, Command>(); // Map for execution
-const guildCommands: Command[] = []; // Array for registrating commands
-const globalCommands: Command[] = [];
+export const VALID_COLORS: [string, string][] = [["White", "WHITE"],
+["Aqua", "AQUA"],
+["Green", "GREEN"],
+["Blue", "BLUE"],
+["Yellow", "YELLOW"],
+["Purple", "PURPLE"],
+["Luminous Vivid Pink", "LUMINOUS_VIVID_PINK"],
+["Fuchsia", "FUCHSIA"],
+["Gold", "GOLD"],
+["Orange", "ORANGE"],
+["Red", "RED"],
+["Grey", "GREY"],
+["Navy", "NAVY"],
+["Dark Aqua", "DARK_AQUA"],
+["Dark Green", "DARK_GREEN"],
+["Dark Blue", "DARK_BLUE"],
+["Dark Purple", "DARK_PURPLE"],
+["Dark Vivid Pink", "DARK_VIVID_PINK"],
+["Dark Gold", "DARK_GOLD"],
+["Dark Orange", "DARK_ORANGE"],
+["Dark Red", "DARK_RED"],
+["Light Grey", "LIGHT_GREY"],
+["Dark Navy", "DARK_NAVY"],
+["Blurple", "BLURPLE"],
+["Random", "RANDOM"]];
 
-export let config: { token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, topicRate: number, useServerName: boolean, lineLength: number, cacheRate: number, build: number };
+export let config: {
+  token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, presenceRate: number,
+  useServerName: boolean, lineLength: number, cacheRate: number, build: number, addServerPermission: string, elevatedPermission: string,
+  ephemeralize: {
+    commands: { onComplete: boolean, onFail: boolean }, ping: boolean, purge: boolean, restart: boolean,
+    stats: { global: boolean, guild: boolean }, version: boolean, addserver: boolean, deleteserver: boolean, giveaccess: boolean,
+    notify: { list: boolean, clear: boolean, add: boolean }, revokeaccess: boolean, servers: boolean, editserver: boolean
+  }
+};
 export const generator = new EmbedGenerator();
 export let client: Client;
-export const version = "1.0.0";
+export const version = "1.0.1";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
 
-let rest: REST;
+export let rest: REST;
 const messengerMap = new Map<string, Messenger>();
 const guildProfiles = new Map<string, GuildProfile>();
 const updateMap = new Map<string, Updater>();
 
+init();
 
-console.log("Loading config...");
-
-import(path.resolve(__dirname, "./config.json")).then(c => {
-  config = c;
-  console.log("Config loaded: " + c);
-  init();
-});
-
-export function init(): void {
+export async function init(): Promise<void> {
+  config = await import(path.resolve(__dirname, "./config.json"));
   client = new Client({
     allowedMentions: { parse: ['users', 'roles'], repliedUser: true },
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, /*Intents.FLAGS.DIRECT_MESSAGES*/], /*partials: ["CHANNEL"] */
@@ -64,16 +105,16 @@ export function init(): void {
     start = Date.now();
     let serverCount = getServers().length;
 
-    for (const server of getServers()) {
-      const update = new Updater(server);
-      update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
-      addUpdater(update.data.guild, update.data.name, update);
+    for (const [guild, data] of guilds.entries()) {
+      const msg = getMessenger(guild) ?? new Messenger(data);
+      setMessenger(guild, msg);
+      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
     }
 
-    for (const [guild, data] of guilds.entries()) {
-      const msg = new Messenger(data);
-      messengerMap.set(guild, msg);
-      msg.start(config.discordDelay * 1000, config.discordRate * 1000);
+    for (const server of getServers()) {
+      const update = getUpdater(server.guild, server.name) ?? new Updater(server);
+      update.start(config.sourceDelay * 1000, config.sourceRate * 1000);
+      addUpdater(update.data.guild, update.data.name, update);
     }
 
     setInterval(() => {
@@ -85,25 +126,36 @@ export function init(): void {
           name: count + " player" + (count === 1 ? "" : "s") + " across " + serverCount + " server" + (serverCount === 1 ? "" : "s"), type: "WATCHING"
         }]
       });
-    }, (config.topicRate ? config.topicRate : 300) * 1000);
+    }, (config.presenceRate ?? 60) * 1000);
   });
 
-  client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
+  client.on("guildCreate", async interaction => {
+    registerCommands(interaction.id);
+  });
 
-    const command: Command | undefined = commands.get(interaction.commandName);
+  client.on("guildDelete", async guild => {
+    getMessenger(guild.id)?.stop();
 
-    if (!command)
-      return;
+    const profile = getGuildProfile(guild.id);
 
-    try {
-      command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      interaction.reply({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true }).catch(() => {
-        interaction.followUp({ content: 'There was an error while executing this command! ```' + error + "```", ephemeral: true });
-      });
+    for (const server of profile.servers) {
+      getUpdater(guild.id, server.name)?.stop();
+      removeUpdater(guild.id, server.name);
     }
+    fs.unlink(profile.file, (e) => {
+      if (e) console.error("Could not delete file: ", e);
+    });
+  });
+
+  client.on("error", error => {
+    console.error("An error occured: ", error);
+  });
+
+  process.on('uncaughtException', error => {
+    console.error('A process exception occured:', error);
+  });
+  process.on('unhandledRejection', error => {
+    console.error('A rejection went unhandled:', error);
   });
 
   client.login(config.token);
@@ -118,8 +170,8 @@ export function restart(): void {
   messengerMap.clear();
 
   client.destroy();
-  // init();
-  process.exit();
+  init();
+  // process.exit();
 }
 
 /**
@@ -214,104 +266,6 @@ function loadClientProfiles() {
 }
 
 /**
- * Loads and populates both the commands map (for execution) and commandArray (for registration).
- */
-function loadCommands() {
-  const guildCommandFiles = fs.readdirSync(path.resolve(__dirname, './commands/guild')).filter((file: string) => file.endsWith('.js'));
-  const globalCommandFiles = fs.readdirSync(path.resolve(__dirname, './commands/global')).filter((file: string) => file.endsWith('.js'));
-  commands.clear();
-  guildCommands.length = 0;
-  globalCommands.length = 0;
-
-  for (const file of guildCommandFiles) {
-    import(`./commands/guild/${file}`).then(command => {
-      commands.set(command.data.name, command);
-      guildCommands.push(command.data.toJSON());
-    });
-
-  }
-  for (const file of globalCommandFiles) {
-    import(`./commands/global/${file}`).then(command => {
-      commands.set(command.data.name, command);
-      globalCommands.push(command.data.toJSON());
-    });
-  }
-}
-
-
-/**
- * Registers commands and updates the permissions via updatePermissions.
- * @param guildId The guild to update commands for, if not specified, updates all guild's commands
- */
-export function registerCommands(guildId?: string): void {
-  (async () => {
-    const id = client.user?.id;
-    if (!id)
-      throw "No client ID found";
-    if (!guildId) {
-      // let app = await client.application?.fetch();
-      // if (app) {
-      //   for (let cmd of (await app.commands.fetch()).values()) {
-      //     if (globalCommands.some(c => cmd.name == c.name))
-      //       continue;
-      //     console.log("Deleting " + JSON.stringify(cmd));
-      //     cmd.delete();
-      //   }
-      // }
-      for (const guild of await client.guilds.fetch()) {
-        registerCommands(guild[0]);
-      }
-      // rest.put(Routes.applicationCommands(config.clientId), { body: globalCommands });
-      return;
-    }
-    const guild = client.guilds.fetch(guildId);
-    const gCommands = await (await guild).commands.fetch();
-    for (const cmd of gCommands) {
-      if (commands.has(cmd[1].name))
-        continue;
-      cmd[1].delete();
-    }
-
-    rest.put(Routes.applicationGuildCommands(id, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId) });
-  })();
-}
-
-/**
- * Updates the specified guild's command permissions. By default, the highest role has access to all commands. Any role that has access to manage the guild also has access to all commands.
- * @param guildId The guild to update permissions for, if not specified, updates all guild's permissions
- */
-export function updatePermissions(guildId?: string): void {
-  (async () => {
-    if (!guildId) {
-      for (const guild of await client.guilds.fetch()) {
-        updatePermissions(guild[0]);
-      }
-      return;
-    }
-    const guild = await client.guilds.fetch(guildId);
-    const serverPerm: ApplicationCommandPermissionData[] = [{
-      id: guild.roles.highest.id,
-      permission: true,
-      type: "ROLE"
-    }];
-    const roles = await guild.roles.fetch();
-    for (const role of roles) {
-      if (!role[1].permissions.has("MANAGE_GUILD") && !getGuildProfile(guild.id).elevated.includes(role[0]))
-        continue;
-      serverPerm.push({
-        id: role[0],
-        permission: true,
-        type: "ROLE"
-      });
-    }
-    const commands = guild.commands.fetch();
-    for (const cmd of await commands) {
-      cmd[1].permissions.set({ permissions: serverPerm });
-    }
-  })();
-}
-
-/**
  * Gets the ServerData given the guild and name.
  * @param guild The guild to search.
  * @param name The server name. Names should be unique.
@@ -337,19 +291,100 @@ export function getData(guild: string, name: string, strict = false): ServerData
   return undefined;
 }
 
+export async function selectData(guild: string, name: string | undefined, interaction: CommandInteraction, mustSee = true): Promise<Promise<ServerData> | undefined> {
+  const possible = [];
+  const g = client.guilds.cache.get(guild);
+  for (const data of getGuildServers(guild)) {
+    if (name && data.name.toLowerCase() === name.toLowerCase())
+      return data;
+    if (name && similarity(name, data.name) === 0)
+      continue;
+    if (mustSee) {
+      const channel = g?.channels.cache.get(data.channel);
+      if (!channel?.permissionsFor(interaction.user)?.has("VIEW_CHANNEL"))
+        continue;
+    }
+    possible.push(data);
+  }
+
+  if (!possible.length)
+    return undefined;
+  if (possible.length === 1)
+    return possible[0];
+  if (name)
+    possible.sort((a, b) => similarity(name, b.name) - similarity(name, a.name));
+  possible.length = Math.min(possible.length, 5);
+  const options: MessageSelectOptionData[] = [];
+
+  for (const data of possible)
+    options.push({ label: data.name, value: data.name, description: data.sourceName });
+
+  const id = Math.random() + "";
+  const row = new MessageActionRow().addComponents(new MessageSelectMenu().setCustomId(id).addOptions(options));
+  await interaction.reply({ content: "More than one server matched, which one did you mean?", ephemeral: true, components: [row] });
+  return interaction.channel?.awaitMessageComponent({ componentType: "SELECT_MENU" }).then(click => {
+    const c = click as SelectMenuInteraction;
+    const data = getData(guild, c.values.join(" "));
+    click.update({ content: "Selected " + data?.name, components: [] });
+    return data;
+  }).catch(e => {
+    if (e)
+      console.warn("Interaction erroed out: ", e);
+    return undefined;
+  });
+}
+
+function similarity(s1: string, s2: string): number {
+  let longer = s1;
+  let shorter = s2;
+  if (s1.length < s2.length) {
+    longer = s2;
+    shorter = s1;
+  }
+  if (longer.length === 0) {
+    return 1.0;
+  }
+  return (longer.length - editDistance(longer, shorter)) / longer.length;
+}
+
+function editDistance(s1: string, s2: string) {
+  s1 = s1.toLowerCase();
+  s2 = s2.toLowerCase();
+
+  const costs = new Array<number>();
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0)
+        costs[j] = j;
+      else {
+        if (j > 0) {
+          let newValue = costs[j - 1];
+          if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+            newValue = Math.min(Math.min(newValue, lastValue),
+              costs[j]) + 1;
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
+        }
+      }
+    }
+    if (i > 0)
+      costs[s2.length] = lastValue;
+  }
+  return costs[s2.length];
+}
+
 /**
  * Gets the messenger attached to the specified guild
  * @param guild Guild whose messenger to fetch
  * @returns The guild's messenger. If none exists, a new one is creeated and initizlied, and then returned.
  */
-export function getMessenger(guild: string): Messenger {
-  let messenger = messengerMap.get(guild);
-  if (!messenger) {
-    messenger = new Messenger([]);
-    messenger.start(config.discordDelay * 1000, config.discordRate * 1000);
-    messengerMap.set(guild, messenger);
-  }
-  return messenger;
+export function getMessenger(guild: string): Messenger | undefined {
+  return messengerMap.get(guild);
+}
+
+export function setMessenger(guild: string, messenger: Messenger): void {
+  messengerMap.set(guild, messenger);
 }
 
 /**

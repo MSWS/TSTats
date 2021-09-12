@@ -1,7 +1,19 @@
 /**
  * Represents a server. Its state is not set, and may or may not include many fields.
  */
-export class ServerData {
+export interface ServerBase {
+    guild: string;
+    name: string;
+    ip: string;
+    channel: string;
+    type?: string;
+    color?: string;
+    image?: string;
+    raw?: unknown;
+    connect?: string;
+    overrideName?: string;
+}
+export class ServerData implements ServerBase {
     guild = "";
     name = "";
     sourceName = "";
@@ -18,7 +30,7 @@ export class ServerData {
     connect = "";
     raw: unknown;
 
-    public constructor(data: { guild: string, name: string, ip: string, channel: string, type?: string, color?: string, image?: string, raw?: unknown, connect?: string, overrideName?: string }) {
+    public constructor(data: ServerBase) {
         this.name = data.name;
         this.ip = data.ip;
         this.guild = data.guild;
@@ -88,6 +100,6 @@ export class ServerData {
     }
 
     toJSON(): unknown {
-        return { guild: this.guild, name: this.name, ip: this.ip, channel: this.channel, type: this.type, color: this.color, image: this.image };
+        return { name: this.name, ip: this.ip, channel: this.channel, type: this.type, color: this.color, image: this.image };
     }
 }

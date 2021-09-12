@@ -69,7 +69,7 @@ module.exports = {
         embed.addField("Uptime", date.toISOString().substring(11, 19), true);
         embed.addField("Build Version", version + "." + config.build + "", true);
         embed.setFooter("Requested by " + interaction.user.username);
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.stats.global });
 
         if (guildServers && guildPlayers && guildMax) {
             embed = new MessageEmbed();
@@ -83,7 +83,7 @@ module.exports = {
                 embed.addField("Least Popular", guildUnpopular.name + " (" + Math.round(guildUnpopular.getOnline() / guildPlayers * 1000) / 10 + "%)");
             }
             embed.setFooter("Requested by " + interaction.user.username);
-            interaction.followUp({ embeds: [embed], ephemeral: true });
+            interaction.followUp({ embeds: [embed], ephemeral: config.ephemeralize.stats.guild });
         }
     },
 };

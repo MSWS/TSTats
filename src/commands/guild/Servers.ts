@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, MessageEmbed, TextChannel } from "discord.js";
-import { client, getGuildServers } from "../..";
+import { client, config, getGuildServers } from "../..";
 import { ServerData } from "../../ServerData";
 
 module.exports = {
@@ -8,7 +8,7 @@ module.exports = {
         .setDescription("Lists server in the discord"),
     async execute(interaction: CommandInteraction) {
         if (!interaction.guildId || !interaction.inGuild() || !interaction.guild) {
-            await interaction.reply({ content: "There are no servers in here.", ephemeral: true });
+            await interaction.reply({ content: "There are no servers in here.", ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
         const embed = new MessageEmbed();
@@ -46,10 +46,10 @@ module.exports = {
             embed.setTitle("No Servers");
             embed.setColor("DARK_RED");
             embed.setDescription("There are no servers in this guild.");
-            interaction.reply({ embeds: [embed], ephemeral: true });
+            interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.commands.onFail });
             return;
         }
 
-        interaction.reply({ embeds: [embed], ephemeral: true });
+        interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.servers });
     },
 };
