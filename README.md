@@ -2,11 +2,14 @@
 ### PT is a JavaScript Discord Bot originally intended for use with Source Servers. This script uses [Gamedig's](https://www.npmjs.com/package/gamedig) library.
 
 ## Installation
-1. Install Typescript - `npm install typescript -g` 
-2. Install Required libraries - `npm install [Library]` (See `package.json` for libraries used)
-3. Initialize project - `npm init -y`
-4. Compile/Build source - `npx src/index.ts --downlevelIteration`
-5. Run program - `npm run build`
+
+1. npm init --yes
+2. npm install copyfiles --save-dev
+3. npm install discord.js --save-dev
+4. npm install gamedig --save-dev
+5. npm install typescript --save-dev
+6. npm run execute
+7. tsc
 
 ## Creation
 Note: In order for slash commands to function properly, the bot must be given the **applications.commands** OAuth2 scope permission. 
@@ -30,16 +33,47 @@ Note: By default, only the highest role and roles that have access to `MANAGE_GU
 ## Configuration
 ### All Configuration is done through the `config.json`
 
-```json
+```jsonc
 /**
     Global Settings
 **/
-"token": "", // The token of the bot
-"discordRate": 60, // The rate (in seconds) that the bot will update the embeds
-"sourceRate": 60, // The rate (in seconds) that the bot will query the game servers
-"discordDelay": 10, // The delay (in seconds) that the program will wait to start sending messages
-"sourceDelay": 0, // The delay (in seconds) that the program will wait to start querying game servers
-"topicRate": 300, // The delay (in seconds) that each channel's topic will be refreshed (note: rate limit is 600)
-"useServerName": true, // If true, embeds will use the server's live name, if false, will use the configured name
-"lineLength": 60, // Maximum line length for embeds
-"cacheRate": 5, // How often (in minutes) an image should be cached for
+{
+    "token": "", // Token of the bot
+    "discordRate": 60, // Rate that Discord messages will be updated
+    "sourceRate": 60, // Rate that game servers will be updated
+    "discordDelay": 3, // Initial discord message delay
+    "sourceDelay": 0, // Initial source server delay
+    "presenceRate": 60, // Rate that presence will be updated
+    "useServerName": true, // If true, embeds will use the live server's name
+    "lineLength": 50, // Max line length for embeds 
+    "cacheRate": 5, // Minutes to cache graphs for
+    "addServerPermission": "MANAGE_CHANNELS", // Required permission to add servers
+    "elevatedPermission": "MANAGE_GUILD", // Required permission to give other roles access to add servers / give additional access
+    "ephemeralize": { // Ephemeralizing messages causes them to only be shown to the source (https://support.discord.com/hc/en-us/articles/1500000580222-Ephemeral-Messages-FAQ)
+        "commands": {
+            "onComplete": false,
+            "onFail": true
+        },
+        "ping": false,
+        "purge": true,
+        "restart": false,
+        "stats": {
+            "global": false,
+            "guild": false
+        },
+        "version": false,
+        "addserver": false,
+        "deleteserver": false,
+        "giveaccess": false,
+        "notify": {
+            "list": true,
+            "clear": false,
+            "add": false
+        },
+        "revokeaccess": false,
+        "servers": true,
+        "editserver": false
+    },
+    "build": 0
+}
+```
