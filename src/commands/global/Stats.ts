@@ -67,7 +67,7 @@ module.exports = {
         }
 
         embed.addField("Uptime", date.toISOString().substring(11, 19), true);
-        embed.addField("Build Version", version + "." + config.build + "", true);
+        embed.addField("Build Version", version + "." + process.env.BUILD_VERSION + "", true);
         embed.setFooter("Requested by " + interaction.user.username);
         await interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.stats.global });
 

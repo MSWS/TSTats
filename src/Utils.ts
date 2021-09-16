@@ -1,4 +1,4 @@
-import { APIMessage } from "discord-api-types";
+import { APIMessage } from 'discord-api-types/v9';
 import { BaseCommandInteraction, Channel, InteractionReplyOptions, Message, MessageEmbed, MessageOptions, MessagePayload, TextChannel } from "discord.js";
 import { client } from ".";
 import { ServerData } from "./ServerData";
@@ -64,8 +64,7 @@ export async function sendDM(id: string, msg: string | MessagePayload | MessageO
 }
 
 export function respond(interaction: BaseCommandInteraction, options: string | InteractionReplyOptions | MessagePayload): Promise<Message | APIMessage | void> {
-    if (interaction.replied)
-        return interaction.followUp(options);
-    else
-        return interaction.reply(options);
+    return interaction.replied
+        ? interaction.followUp(options) as Promise<Message | APIMessage>
+        : interaction.reply(options);
 }
