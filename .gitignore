@@ -17,5 +17,7 @@
 .env
 node_modules
 lib
+dist
 package-lock.json
 *.js
+BUILD_VERSION
