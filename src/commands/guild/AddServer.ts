@@ -74,7 +74,7 @@ module.exports = {
             channel: channel.id,
             image: image,
             type: type ?? undefined,
-            color: interaction.options.getString("color") ?? undefined
+            color: interaction.options.getString("color") === "NONE" ? undefined : interaction.options.getString("color") ?? undefined
         });
 
         const update = new Updater(data);
@@ -91,7 +91,7 @@ module.exports = {
         embed.setTitle("Success");
         embed.setDescription("Added " + data.name + " (" + data.ip + ")  to <#" + channel.id + ">.");
         embed.addField("Game", data.type, true);
-        embed.addField("Color", data.color ? data.color : "Dynamic", true);
+        embed.addField("Color", data.color ?? "Dynamic", true);
         if (data.image)
             embed.addField("Image", data.image, true);
         embed.setColor("GREEN");
