@@ -69,3 +69,11 @@ export function respond(interaction: BaseCommandInteraction, options: string | I
     else
         return interaction.reply(options);
 }
+
+export function apost(str: string): string {
+    return str += "'" + (str.toLowerCase().endsWith("s") ? "" : "s");
+}
+
+export function plural(str: string, amo: number): string {
+    return str + (amo === 1 ? "" : "s");
+}

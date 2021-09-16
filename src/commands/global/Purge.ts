@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction, TextBasedChannels } from "discord.js";
 import { client, config } from "../..";
+import { plural } from "../../Utils";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -32,7 +33,7 @@ module.exports = {
                 return;
             }
 
-            interaction.editReply("Successfully deleted " + msgs.length + " message" + (msgs.length === 1 ? "" : "s") + ".");
+            interaction.editReply("Successfully deleted " + msgs.length + " " + plural("message", msgs.length) + ".");
         });
     }
 };
