@@ -76,7 +76,7 @@ export let config: {
 };
 export const generator = new EmbedGenerator();
 export let client: Client;
-export const version = "1.0.1";
+export const version = "1.0.2";
 
 export let start: number;
 export let guilds: Map<string, ServerData[]>;
