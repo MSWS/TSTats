@@ -25,9 +25,9 @@ export class ServerData implements ServerBase {
     map = "";
     ping = -1;
     type = "csgo";
-    color = "";
-    image = "";
-    connect = "";
+    color?= "";
+    image?= "";
+    connect?= "";
     raw: unknown;
 
     public constructor(data: ServerBase) {

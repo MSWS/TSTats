@@ -2,7 +2,7 @@ import { SlashCommandBuilder, SlashCommandStringOption } from "@discordjs/builde
 import { CommandInteraction, PermissionString } from "discord.js";
 import { config, GAME_TYPES, getGuildProfile, getMessenger, selectData, VALID_COLORS } from "../..";
 import { Messenger } from "../../Messenger";
-import { getTextChannel, respond } from "../../Utils";
+import { apost, getTextChannel, respond } from "../../Utils";
 
 const sopt = (sub: SlashCommandStringOption) => sub.setName("server").setDescription("The server to edit").setRequired(true);
 
@@ -80,14 +80,24 @@ module.exports = {
                 vs = "`" + server.type + "`";
                 break;
             case "color":
-                server.color = value?.value as string ?? undefined;
                 key = "Embed Color";
-                vs = value?.value as string;
+                if (value?.value === "NONE") {
+                    server.color = undefined;
+                    vs = "Dynamic";
+                } else {
+                    server.color = value?.value as string ?? undefined;
+                    vs = value?.value as string;
+                }
                 break;
             case "image":
-                server.image = value?.value as string ?? undefined;
                 key = "Embed Image";
-                vs = value?.value as string;
+                if (value?.value?.toString().toUpperCase() === "NONE") {
+                    server.image = undefined;
+                    vs = "None";
+                } else {
+                    server.image = value?.value as string ?? undefined;
+                    vs = value?.value as string;
+                }
                 break;
             default:
                 return;
@@ -96,6 +106,6 @@ module.exports = {
         profile.servers = profile.servers.filter(s => s.name !== server.name);
         profile.servers.push(server);
         profile.save();
-        respond(interaction, { content: "Successfully changed " + server.name + "'s " + key + " to " + vs + ".", ephemeral: config.ephemeralize.editserver });
+        respond(interaction, { content: "Successfully changed " + apost(server.name) + " " + key + " to " + vs + ".", ephemeral: config.ephemeralize.editserver });
     }
 };

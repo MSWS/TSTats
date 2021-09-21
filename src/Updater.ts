@@ -3,7 +3,7 @@ import { client, clientProfiles, getMessenger } from ".";
 import { getSummary, NotifyType } from "./ClientProfile";
 import { Messenger } from "./Messenger";
 import { ServerBase, ServerData } from "./ServerData";
-import { sendDM } from "./Utils";
+import { apost, plural, sendDM } from "./Utils";
 
 /**
  * Responsible for querying Gamedig's API and updating the responsible messenger.
@@ -169,12 +169,12 @@ export class Updater {
                 let message = "";
                 switch (option.type) {
                     case NotifyType.ADMIN:
-                        message = "**" + this.data.name + "** has `" + this.data.getOnline() + "` player" + (this.data.getOnline() === 1 ? "" : "s") + " but no admins online.";
+                        message = "**" + this.data.name + "** has `" + this.data.getOnline() + "` " + plural("player", this.data.getOnline()) + " but no admins online.";
                         break;
                     case NotifyType.MAP:
                         if (!this.matches(option.value, value as string))
                             break;
-                        message = "**" + this.data.name + "**'s map has changed to `" + value + "`.";
+                        message = "**" + apost(this.data.name) + "** map changed to `" + value + "`.";
                         break;
                     case NotifyType.PLAYER:
                         for (const player of value as Array<{ name: string, online: boolean }>) {
@@ -187,7 +187,7 @@ export class Updater {
                         message = "`" + this.data.name + "` is now **" + (value ? "Online" : "Offline") + "**.";
                         break;
                     case NotifyType.DEBUG:
-                        message = "**" + this.data.name + "** has updated.";
+                        message = "**" + this.data.name + "** updated.";
                         break;
                     default:
                         profile.options = profile.options.filter(opt => opt !== option);
@@ -210,14 +210,18 @@ export class Updater {
                             await click.update({ components: [editRow] });
                         } else if (click.customId === selectId) {
                             if (!profile.options.includes(option)) {
-                                await click.followUp({ content: "You have alredy stopped these notifications.", ephemeral: true });
+                                await click.followUp({ content: "You already stopped these notifications.", ephemeral: true });
                                 return;
                             }
                             const select = click as SelectMenuInteraction;
                             const minutes = parseInt(select.values[0]);
                             profile.options = profile.options.filter(p => p.guild !== option.guild || p.server !== option.server || p.type !== option.type || p.value !== option.value);
-                            setTimeout(function () {
-                                click.editReply({ content: "Snooze has expired, notifications have resumed.", components: [] }).catch((e) => { if (e) console.error("Unable to delete message: ", e); });
+                            setTimeout(async function () {
+                                const reply = await click.fetchReply();
+                                const msg = await click.channel?.messages.fetch(reply.id);
+                                if (!msg)
+                                    return;
+                                msg.edit({ content: "Snooze has expired, notifications have resumed.", components: [] }).catch((e) => { if (e) console.error("Unable to delete message: ", e); });
                                 if (profile.options.some(e => e.guild === option.guild && e.server === option.server && e.type === option.type && e.value === option.value))
                                     return;
                                 profile.options.push(option);
@@ -226,7 +230,7 @@ export class Updater {
                             await click.update({ content: "Successfully snoozed notifications " + option.getDescription() + " They will be re-enabled <t:" + time + ":R>.", components: [unsnoozeRow] });
                         } else if (click.customId === snoozeId) {
                             if (!profile.options.includes(option)) {
-                                await click.followUp({ content: "You have alredy stopped these notifications.", ephemeral: true });
+                                await click.followUp({ content: "You already stopped these notifications.", ephemeral: true });
                                 return;
                             }
                             const used = new MessageButton().setLabel("Snoozed").setEmoji("🛏️").setStyle("PRIMARY").setCustomId("unused").setDisabled(true);
@@ -258,16 +262,17 @@ export class Updater {
                                 if (e) console.error("Could not delete message: ", e);
                             });
                         } else if (click.customId === infoId) {
-                            const guildName = client.guilds.cache.get(option.guild)?.name;
+                            let guild = client.guilds.cache.get(option.guild);
+                            if (!guild)
+                                guild = await client.guilds.fetch(option.guild);
+                            const guildName = guild.name;
                             const embed = new MessageEmbed();
-                            embed.setTitle(getSummary(option.type) + " Notificaiton");
-                            embed.setDescription("This notification is triggered " + option.getDescription() + "\n\nYou enabled this notification in " + guildName + "'s server.\nChannel: <#" + this.data.channel + ">");
+                            embed.setTitle(getSummary(option.type) + " Notification");
+                            embed.setDescription("This notification is triggered " + option.getDescription() + "\n\nYou enabled this notification in " + apost(guildName) + " server.\nChannel: <#" + this.data.channel + ">");
                             embed.setColor("AQUA");
                             click.reply({ embeds: [embed], ephemeral: true });
                         }
                     });
-
-
                 });
             }
         }
