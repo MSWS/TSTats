@@ -14,8 +14,6 @@ export interface Command {
     execute: (interaction: Interaction) => void
 }
 
-
-
 /**
  * Loads and populates both the commands map (for execution) and commandArray (for registration).
  */
@@ -46,8 +44,6 @@ export function loadCommands(): void {
  * @param guildId The guild to update commands for, if not specified, updates all guild's commands
  */
 export function registerCommands(guildId?: string): void {
-
-
     (async () => {
         const id = client.user?.id;
         if (!id)
@@ -89,8 +85,9 @@ export function registerCommands(guildId?: string): void {
             });
             return;
         }
-        const guild = client.guilds.fetch(guildId);
-        const gCommands = await (await guild).commands.fetch();
+        const guild = await client.guilds.fetch(guildId);
+        const gCommands = await guild.commands.fetch();
+
         for (const cmd of gCommands) {
             if (commands.has(cmd[1].name))
                 continue;

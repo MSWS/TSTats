@@ -64,7 +64,16 @@ export async function sendDM(id: string, msg: string | MessagePayload | MessageO
 }
 
 export function respond(interaction: BaseCommandInteraction, options: string | InteractionReplyOptions | MessagePayload): Promise<Message | APIMessage | void> {
-    return interaction.replied
-        ? interaction.followUp(options) as Promise<Message | APIMessage>
-        : interaction.reply(options);
+    if (interaction.replied)
+        return interaction.followUp(options) as Promise<Message | APIMessage>;
+    else
+        return interaction.reply(options);
+}
+
+export function apost(str: string): string {
+    return str += "'" + (str.toLowerCase().endsWith("s") ? "" : "s");
+}
+
+export function plural(str: string, amo: number): string {
+    return str + (amo === 1 ? "" : "s");
 }
