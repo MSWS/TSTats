@@ -17,7 +17,6 @@ module.exports = {
             guildMax = getMaxPlayerCount(guildServers);
         }
         const servers = getServers();
-        const uptime = Date.now() - start;
 
         let globalPopular: ServerData | undefined, globalUnpopular: ServerData | undefined;
         let guildPopular: ServerData | undefined, guildUnpopular: ServerData | undefined;
@@ -52,8 +51,6 @@ module.exports = {
         const globalPopularGuild = client.guilds.cache.get(globalPopular.guild)?.name, globalUnpopularGuild = client.guilds.cache.get(globalUnpopular?.guild)?.name;
 
         let embed = new MessageEmbed();
-        const date = new Date(0);
-        date.setSeconds(uptime / 1000);
 
         embed.setTitle("Global Statistics");
         embed.setColor("BLUE");
@@ -66,7 +63,7 @@ module.exports = {
             embed.addField("Least Popular", globalUnpopular.name + " from " + globalUnpopularGuild + " (" + Math.round(globalUnpopular.getOnline() / globalPlayers * 1000) / 10 + "%)");
         }
 
-        embed.addField("Uptime", date.toISOString().substring(11, 19), true);
+        embed.addField("Uptime", "<t:" + Math.round(start / 1000) + ":R>", true);
         embed.addField("Build Version", version + "." + config.build + "", true);
         embed.setFooter("Requested by " + interaction.user.username);
         await interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.stats.global });
