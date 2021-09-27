@@ -1,33 +1,34 @@
 {
-  "name": "edge-bot",
-  "version": "1.0.0",
-  "description": "## Installation 1. Install Typescript - `npm install typescript -g`  2. Install Required libraries - `npm install [Library]` (See `package.json` for libraries used) 3. Initialize project - `npm init -y` 4. Compile/Build source - `npx src/index.ts --downlevelIteration` 5. Run program - `npm run build`",
-  "main": "index.js",
-  "scripts": {
-    "execute": "npm run lint && npm run copyconfig && npm run build",
-    "lint": "eslint . --ext .ts",
-    "build": "tsc && tsc src/build.ts && node lib/build.js",
-    "copyconfig": "copyfiles -s -u 1 src/config.json lib/",
-    "start": "node lib/index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://gitlab.edgegamers.io/discord/edge-bot.git"
-  },
-  "keywords": [],
-  "author": "MSWS",
-  "license": "MIT",
-  "devDependencies": {
-    "@discordjs/rest": "^0.1.0-canary.0",
-    "@typescript-eslint/eslint-plugin": "^4.31.0",
-    "@typescript-eslint/parser": "^4.31.0",
-    "copyfiles": "^2.4.1",
-    "discord-api-types": "^0.22.0",
-    "discord.js": "^13.1.0",
-    "eslint": "^7.32.0",
-    "typescript": "^4.4.2"
-  },
-  "dependencies": {
-    "@discordjs/builders": "^0.6.0"
-  }
+    "name": "edge-bot",
+    "version": "1.0.0",
+    "description": "## Installation 1. Install Typescript - `npm install typescript -g`  2. Install Required libraries - `npm install [Library]` (See `package.json` for libraries used) 3. Initialize project - `npm init -y` 4. Compile/Build source - `npx src/index.ts --downlevelIteration` 5. Run program - `npm run build`",
+    "main": "index.js",
+    "scripts": {
+        "build": "npm run execute && npx tsc",
+        "copyconfig": "copyfiles -s -u 1 src/config.json dist/",
+        "execute": "npm run lint && npm run copyconfig",
+        "lint": "npx eslint . --ext .ts",
+        "start": "node dist/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.edgegamers.io/discord/edge-bot.git"
+    },
+    "keywords": [],
+    "author": "MSWS",
+    "license": "MIT",
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^4.31.0",
+        "@typescript-eslint/parser": "^4.31.0",
+        "copyfiles": "^2.4.1",
+        "eslint": "^7.32.0",
+        "typescript": "^4.4.2"
+    },
+    "dependencies": {
+        "@discordjs/builders": "^0.6.0",
+        "@discordjs/rest": "^0.1.0-canary.0",
+        "discord-api-types": "^0.23.1",
+        "discord.js": "^13.1.0",
+        "gamedig": "^3.0.7"
+    }
 }

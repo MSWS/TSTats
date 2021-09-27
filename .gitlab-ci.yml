@@ -1,16 +1,23 @@
-image: node:latest
+variables:
+  DOCKER_BUILDKIT: 1
+  CONTAINER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
-cache:
-    paths:
-        - node_modules/
+services:
+  - docker:20.10.7-dind
 
 build:
-    script:
-        - npm install copyfiles --save-dev
-        - npm install discord.js --save-dev
-        - npm install gamedig --save-dev
-        - npm install typescript --save-dev
-        - npm init --yes
-        - npm run execute
-    tags:
-        - docker
+  image: docker:20.10.7
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker pull $CONTAINER_IMAGE || true
+    - docker build
+      --cache-from $CONTAINER_IMAGE
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      --build-arg BUILD_VERSION=$(git rev-list --count HEAD)
+      --tag $CONTAINER_IMAGE
+      -f Dockerfile
+      .
+    - docker push $CONTAINER_IMAGE
+  tags:
+    - docker
