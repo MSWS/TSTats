@@ -34,7 +34,7 @@ export class ClientProfile {
 }
 
 export enum NotifyType {
-    MAP = "MAP", PLAYER = "PLAYER", STATUS = "STATUS", ADMIN = "ADMIN", DEBUG = "DEBUG"
+    MAP = "MAP", PLAYER = "PLAYER", STATUS = "STATUS", ADMIN = "ADMIN", DEBUG = "DEBUG", ONLINE = "ONLINE", OFFLINE = "OFFLINE"
 }
 
 Object.freeze(NotifyType);
@@ -70,6 +70,10 @@ export class ClientOption {
             case NotifyType.DEBUG:
                 str = "when " + this.server + " updates";
                 break;
+            case NotifyType.OFFLINE:
+            case NotifyType.ONLINE:
+                str = "when " + this.server + " goes " + (this.type === NotifyType.ONLINE) ? "online" : "offline";
+                break;
             default:
                 return "Unknown notification setting.";
         }
@@ -87,7 +91,11 @@ export class ClientOption {
             case NotifyType.ADMIN:
                 return "RED";
             case NotifyType.DEBUG:
+                return "DARK_RED";
+            case NotifyType.ONLINE:
                 return "AQUA";
+            case NotifyType.OFFLINE:
+                return "GREYPLE";
             default:
                 return "DARK_BUT_NOT_BLACK";
         }
@@ -106,6 +114,10 @@ export function getSummary(type: NotifyType): string {
             return "No Admins";
         case NotifyType.DEBUG:
             return "Debugging";
+        case NotifyType.OFFLINE:
+            return "Offline";
+        case NotifyType.ONLINE:
+            return "Online";
         default:
             return "Unknown";
     }

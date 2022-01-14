@@ -14,6 +14,7 @@ export class Updater {
     data: ServerData;
     Gamedig = require("gamedig");
     stopped = false;
+    stopTicks: number;
     everOnline = false;
 
     public constructor(data: ServerBase) {
@@ -21,6 +22,7 @@ export class Updater {
         this.ip = args[0];
         this.port = args.length !== 2 ? undefined : parseInt(args[1]);
         this.data = new ServerData(data);
+        this.stopTicks = 0;
     }
 
     notifs = new Map<NotifyType, unknown>();
@@ -36,8 +38,10 @@ export class Updater {
                 port: this.port,
                 maxAttempts: 3
             }).then((state: { name: string, map: string, maxplayers: string, connect: string, raw: unknown, players: Array<{ name: string, ping: number }>, ping: number }) => {
-                if (this.data.ping === -1 && this.everOnline)
+                if (this.data.ping === -1 && this.everOnline) {
+                    this.notifs.set(NotifyType.ONLINE, true);
                     this.notifs.set(NotifyType.STATUS, true);
+                }
 
                 this.data.sourceName = state.name;
                 if (this.data.map !== state.map && this.everOnline)
@@ -79,28 +83,29 @@ export class Updater {
                 }
 
                 this.everOnline = true;
+                this.stopTicks = 0;
                 this.notifs.set(NotifyType.DEBUG, undefined);
                 this.notify();
                 this.notifs.clear();
             }).catch(() => {
-                if (this.data.ping !== -1 && this.everOnline)
+                if (this.data.ping !== -1 && this.everOnline && this.stopTicks > 3) {
                     this.notifs.set(NotifyType.STATUS, false);
+                    this.notifs.set(NotifyType.OFFLINE, false);
+                }
                 this.data.players = [];
                 this.data.map = "Offline";
                 this.data.ping = -1;
                 this.data.sourceName = this.data.name + " (Offline)";
                 getMessenger(this.data.guild)?.update(this.data);
-                this.notifs.set(NotifyType.DEBUG, undefined);
                 this.notify();
                 this.notifs.clear();
+                this.stopTicks++;
+                this.notifs.set(NotifyType.DEBUG, undefined);
             });
         } catch (error) {
             console.error(error);
         }
     }
-
-
-
 
     notify(): void {
         for (const profile of clientProfiles.values()) {
@@ -184,6 +189,10 @@ export class Updater {
                         }
                         break;
                     case NotifyType.STATUS:
+                        message = "`" + this.data.name + "` is now **" + (value ? "Online" : "Offline") + "**.";
+                        break;
+                    case NotifyType.ONLINE:
+                    case NotifyType.OFFLINE:
                         message = "`" + this.data.name + "` is now **" + (value ? "Online" : "Offline") + "**.";
                         break;
                     case NotifyType.DEBUG:
