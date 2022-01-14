@@ -8,6 +8,6 @@ module.exports = {
         .setDescription("Checks the bot's version.")
         .setDefaultPermission(true),
     async execute(interaction: CommandInteraction) {
-        interaction.reply({ content: "I am currently running build version `" + version + "." + config.build + "`.", ephemeral: config.ephemeralize.version });
+        interaction.reply({ content: "I am currently running build version `" + version + "." + process.env.BUILD_VERSION + "`.", ephemeral: config.ephemeralize.version });
     }
 };

@@ -16,7 +16,7 @@ module.exports = {
         const embed = new MessageEmbed();
         embed.setTitle("Restarting...");
         embed.setColor("DARK_RED");
-        embed.setFooter("Build Version " + version + "." + config.build);
+        embed.setFooter("Build Version " + version + "." + process.env.BUILD_VERSION);
         await interaction.reply({ embeds: [embed], ephemeral: config.ephemeralize.restart });
         restart();
     }

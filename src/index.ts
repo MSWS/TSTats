@@ -67,13 +67,14 @@ export const VALID_COLORS: [string, string][] = [
 
 export let config: {
   token: string, clientId: string, discordRate: number, sourceRate: number, discordDelay: number, sourceDelay: number, presenceRate: number,
-  useServerName: boolean, lineLength: number, cacheRate: number, build: number, addServerPermission: string, elevatedPermission: string,
+  useServerName: boolean, lineLength: number, cacheRate: number, addServerPermission: string, elevatedPermission: string,
   ephemeralize: {
     commands: { onComplete: boolean, onFail: boolean }, ping: boolean, purge: boolean, restart: boolean,
     stats: { global: boolean, guild: boolean }, version: boolean, addserver: boolean, deleteserver: boolean, giveaccess: boolean,
     notify: { list: boolean, clear: boolean, add: boolean }, revokeaccess: boolean, servers: boolean, editserver: boolean
   }
 };
+
 export const generator = new EmbedGenerator();
 export let client: Client;
 export const version = "1.0.3";
@@ -94,6 +95,8 @@ export async function init(): Promise<void> {
     allowedMentions: { parse: ['users', 'roles'], repliedUser: true },
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, /*Intents.FLAGS.DIRECT_MESSAGES*/], /*partials: ["CHANNEL"] */
   });
+
+  process.env.BUILD_VERSION = process.env.BUILD_VERSION ?? "0";
 
   rest = new REST({ version: '9' }).setToken(config.token);
 
