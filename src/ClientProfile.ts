@@ -72,7 +72,7 @@ export class ClientOption {
                 break;
             case NotifyType.OFFLINE:
             case NotifyType.ONLINE:
-                str = "when " + this.server + " goes " + (this.type === NotifyType.ONLINE) ? "online" : "offline";
+                str = "when " + this.server + " goes " + ((this.type === NotifyType.ONLINE) ? "online" : "offline");
                 break;
             default:
                 return "Unknown notification setting.";

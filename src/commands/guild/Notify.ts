@@ -10,7 +10,7 @@ module.exports = {
         .setDescription("Toggles notification for when a server's status changes")
         .addStringOption(o => o.setName("server").setDescription("The server whose status will be monitored").setRequired(true))
         .addStringOption(o => o.setName("type").setDescription("The thing to monitor").addChoices([
-            ["Map Change", "MAP"], ["Online/Offline Status", "STATUS"], ["Player Session", "PLAYER"], ["No Admins", "ADMIN"], ["Debug", "DEBUG"], ["List", "LIST"], ["Clear", "CLEAR"]
+            ["Map Change", "MAP"], ["Online/Offline Status", "STATUS"], ["Online", "ONLINE"], ["Offline", "OFFLINE"], ["Player Session", "PLAYER"], ["No Admins", "ADMIN"], ["Debug", "DEBUG"], ["List", "LIST"], ["Clear", "CLEAR"]
         ]).setRequired(true))
         .addStringOption(o => o.setName("value").setDescription("The name of the map / player to notify")),
     async execute(interaction: CommandInteraction) {

@@ -93,7 +93,6 @@ export function registerCommands(guildId?: string): void {
                 continue;
             cmd[1].delete();
         }
-
         rest.put(Routes.applicationGuildCommands(id, guildId), { body: guildCommands }).then(() => { updatePermissions(guildId) });
     })();
 }
